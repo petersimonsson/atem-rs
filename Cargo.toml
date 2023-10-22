@@ -6,3 +6,7 @@ authors = ["Peter Simonsson <peter.simonsson@gmail.com>"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+bytes = "1.5"
+thiserror = "1.0"
+tokio = { version = "1.33", features = ["net", "io-util"] }
+tracing = "0.1"
