@@ -1,4 +1,5 @@
 mod packet;
+mod systeminfo;
 
 use std::net::SocketAddr;
 
@@ -7,7 +8,10 @@ use thiserror::Error;
 use tokio::net::UdpSocket;
 use tracing::{debug, info};
 
-use crate::packet::{Packet, PACKET_FLAG_ACK_REQUEST, PACKET_FLAG_HELLO};
+use crate::{
+    packet::{Packet, PACKET_FLAG_ACK_REQUEST, PACKET_FLAG_HELLO},
+    systeminfo::Version,
+};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -94,6 +98,10 @@ fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
     debug!("Command {:?} Size: {}", cmd, size);
 
     match &cmd[..] {
+        b"_ver" => {
+            let version = Version::parse(&mut data);
+            info!("Firmware version: {}", version);
+        }
         _ => {
             debug!(
                 "Unknown command: {} Data: {:02X?} [{}]",
