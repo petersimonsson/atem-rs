@@ -10,3 +10,12 @@ bytes = "1.5"
 thiserror = "1.0"
 tokio = { version = "1.33", features = ["net", "io-util"] }
 tracing = "0.1"
+
+[dev-dependencies]
+anyhow = "1.0.75"
+clap = { version = "4.4.6", features = ["derive"] }
+tokio = { version = "1.33", features = ["net", "io-util", "macros", "rt-multi-thread"] }
+tracing-subscriber = "0.3.17"
+
+[[example]]
+name = "simple"
