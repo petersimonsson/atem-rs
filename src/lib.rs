@@ -90,29 +90,31 @@ async fn send_ack(socket: &UdpSocket, uid: u16, packet_id: u16, ack_id: u16) -> 
 }
 
 fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
-    let size = payload.get_u16();
-    payload.get_u16(); // skip two bytes, unknow function.
-    let cmd = payload.split_to(4);
-    let data_size = size as usize - 8;
-    let mut data = payload.split_to(data_size);
-    debug!("Command {:?} Size: {}", cmd, size);
+    while payload.has_remaining() {
+        let size = payload.get_u16();
+        payload.get_u16(); // skip two bytes, unknow function.
+        let cmd = payload.split_to(4);
+        let data_size = size as usize - 8;
+        let mut data = payload.split_to(data_size);
+        debug!("Command {:?} Size: {}", cmd, size);
 
-    match &cmd[..] {
-        b"_ver" => {
-            let version = Version::parse(&mut data);
-            info!("Firmware version: {}", version);
-        }
-        b"_pin" => {
-            let product = parse_str(&mut data)?;
-            info!("Product: {}", product.unwrap());
-        }
-        _ => {
-            debug!(
-                "Unknown command: {} Data: {:02X?} [{}]",
-                String::from_utf8(cmd.to_vec())?,
-                &data[..],
-                data_size
-            );
+        match &cmd[..] {
+            b"_ver" => {
+                let version = Version::parse(&mut data);
+                info!("Firmware version: {}", version);
+            }
+            b"_pin" => {
+                let product = parse_str(&mut data)?;
+                info!("Product: {}", product.unwrap());
+            }
+            _ => {
+                debug!(
+                    "Unknown command: {} Data: {:02X?} [{}]",
+                    String::from_utf8(cmd.to_vec())?,
+                    &data[..],
+                    data_size
+                );
+            }
         }
     }
 
