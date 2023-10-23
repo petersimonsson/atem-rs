@@ -102,6 +102,10 @@ fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
             let version = Version::parse(&mut data);
             info!("Firmware version: {}", version);
         }
+        b"_pin" => {
+            let product = parse_str(&mut data)?;
+            info!("Product: {}", product.unwrap());
+        }
         _ => {
             debug!(
                 "Unknown command: {} Data: {:02X?} [{}]",
@@ -113,4 +117,14 @@ fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+fn parse_str(data: &mut Bytes) -> Result<Option<String>, Error> {
+    let mut data = data.splitn(2, |b| *b == b'\0');
+
+    if let Some(str) = data.next() {
+        Ok(Some(String::from_utf8(str.to_vec())?))
+    } else {
+        Ok(None)
+    }
 }
