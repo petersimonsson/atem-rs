@@ -2,7 +2,7 @@ mod packet;
 
 use std::net::SocketAddr;
 
-use bytes::BytesMut;
+use bytes::{Buf, Bytes, BytesMut};
 use thiserror::Error;
 use tokio::net::UdpSocket;
 use tracing::{debug, info};
@@ -15,6 +15,8 @@ pub enum Error {
     AddrParseError(#[from] std::net::AddrParseError),
     #[error("")]
     SocketError(#[from] std::io::Error),
+    #[error("Parsing string failed")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
 }
 
 pub struct Connection {
@@ -58,7 +60,9 @@ impl Connection {
                     send_ack(&self.socket, packet.uid(), packet_id, packet.id()).await?;
                 }
 
-                // TODO: Parse payload
+                if let Some(mut payload) = packet.payload() {
+                    parse_payload(&mut payload)?;
+                }
             }
         }
     }
@@ -77,6 +81,28 @@ async fn send_ack(socket: &UdpSocket, uid: u16, packet_id: u16, ack_id: u16) -> 
     debug!("Send Ack for {}", ack_id);
 
     socket.send(&packet.serialize()).await?;
+
+    Ok(())
+}
+
+fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
+    let size = payload.get_u16();
+    payload.get_u16(); // skip two bytes, unknow function.
+    let cmd = payload.split_to(4);
+    let data_size = size as usize - 8;
+    let mut data = payload.split_to(data_size);
+    debug!("Command {:?} Size: {}", cmd, size);
+
+    match &cmd[..] {
+        _ => {
+            debug!(
+                "Unknown command: {} Data: {:02X?} [{}]",
+                String::from_utf8(cmd.to_vec())?,
+                &data[..],
+                data_size
+            );
+        }
+    }
 
     Ok(())
 }
