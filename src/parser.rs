@@ -2,7 +2,7 @@ use bytes::{Buf, Bytes};
 use thiserror::Error;
 use tracing::{debug, info};
 
-use crate::systeminfo::Version;
+use crate::systeminfo::{Source, Version};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -28,6 +28,10 @@ pub fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
                 let product = parse_str(&mut data)?;
                 info!("Product: {}", product.unwrap());
             }
+            b"InPr" => {
+                let source = Source::parse(&mut data)?;
+                info!("{}", source);
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -42,7 +46,7 @@ pub fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
     Ok(())
 }
 
-fn parse_str(data: &mut Bytes) -> Result<Option<String>, Error> {
+pub fn parse_str(data: &mut Bytes) -> Result<Option<String>, Error> {
     let mut data = data.splitn(2, |b| *b == b'\0');
 
     if let Some(str) = data.next() {
