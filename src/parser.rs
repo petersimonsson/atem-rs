@@ -2,7 +2,10 @@ use bytes::{Buf, Bytes};
 use thiserror::Error;
 use tracing::{debug, info};
 
-use crate::{source::Source, systeminfo::Version};
+use crate::{
+    source::Source,
+    systeminfo::{Topology, Version},
+};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -27,6 +30,10 @@ pub fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
             b"_pin" => {
                 let product = parse_str(&mut data)?;
                 info!("Product: {}", product.unwrap());
+            }
+            b"_top" => {
+                let topology = Topology::parse(&mut data);
+                info!("Topology: {}", topology);
             }
             b"InPr" => {
                 let source = Source::parse(&mut data)?;
