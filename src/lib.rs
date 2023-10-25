@@ -13,6 +13,7 @@ use tracing::{debug, info};
 use crate::{
     packet::{Packet, PACKET_FLAG_ACK_REQUEST, PACKET_FLAG_HELLO},
     parser::parse_payload,
+    systeminfo::SystemInfo,
 };
 
 #[derive(Error, Debug)]
@@ -28,6 +29,8 @@ pub enum Error {
 
 pub struct Connection {
     socket: UdpSocket,
+
+    pub(crate) system_info: SystemInfo,
 }
 
 impl Connection {
@@ -44,10 +47,13 @@ impl Connection {
 
         send_hello_packet(&socket).await?;
 
-        Ok(Connection { socket })
+        Ok(Connection {
+            socket,
+            system_info: SystemInfo::default(),
+        })
     }
 
-    pub async fn process_packets(&self) -> Result<(), Error> {
+    pub async fn process_packets(&mut self) -> Result<(), Error> {
         let mut packet_id = 0;
 
         loop {
@@ -68,7 +74,7 @@ impl Connection {
                 }
 
                 if let Some(mut payload) = packet.payload() {
-                    parse_payload(&mut payload)?;
+                    parse_payload(self, &mut payload)?;
                 }
             }
         }

@@ -5,6 +5,7 @@ use tracing::{debug, info};
 use crate::{
     source::Source,
     systeminfo::{Topology, Version},
+    Connection,
 };
 
 #[derive(Debug, Error)]
@@ -13,7 +14,7 @@ pub enum Error {
     Utf8Error(#[from] std::string::FromUtf8Error),
 }
 
-pub fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
+pub fn parse_payload(connection: &mut Connection, payload: &mut Bytes) -> Result<(), Error> {
     while payload.has_remaining() {
         let size = payload.get_u16();
         payload.get_u16(); // skip two bytes, unknow function.
@@ -26,14 +27,17 @@ pub fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
             b"_ver" => {
                 let version = Version::parse(&mut data);
                 info!("Firmware version: {}", version);
+                connection.system_info.set_version(version);
             }
             b"_pin" => {
-                let product = parse_str(&mut data)?;
-                info!("Product: {}", product.unwrap());
+                let product = parse_str(&mut data)?.unwrap();
+                info!("Product: {}", product);
+                connection.system_info.set_product(&product);
             }
             b"_top" => {
                 let topology = Topology::parse(&mut data);
                 info!("Topology: {}", topology);
+                connection.system_info.set_topology(topology);
             }
             b"InPr" => {
                 let source = Source::parse(&mut data)?;

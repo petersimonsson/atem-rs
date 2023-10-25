@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    let atem = Connection::open(&args.address).await?;
+    let mut atem = Connection::open(&args.address).await?;
 
     atem.process_packets().await?;
 

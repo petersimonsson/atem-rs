@@ -2,7 +2,41 @@ use core::fmt;
 
 use bytes::{Buf, Bytes};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
+pub struct SystemInfo {
+    product: Box<str>,
+    version: Version,
+    topology: Topology,
+}
+
+#[allow(dead_code)]
+impl SystemInfo {
+    pub fn set_product(&mut self, description: &str) {
+        self.product = description.into();
+    }
+
+    pub fn product(&self) -> &str {
+        &self.product
+    }
+
+    pub fn set_version(&mut self, version: Version) {
+        self.version = version;
+    }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn set_topology(&mut self, topology: Topology) {
+        self.topology = topology;
+    }
+
+    pub fn topology(&self) -> &Topology {
+        &self.topology
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct Version {
     major: u16,
     minor: u16,
@@ -23,7 +57,7 @@ impl fmt::Display for Version {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Topology {
     me_count: u8,
     source_count: u8,
