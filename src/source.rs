@@ -7,8 +7,8 @@ use crate::parser::{self, parse_str};
 
 #[derive(Debug)]
 pub enum Input {
-    SDI = 1,
-    HDMI = 2,
+    Sdi = 1,
+    Hdmi = 2,
     Composite = 3,
     Component = 4,
     SVideo = 5,
@@ -17,8 +17,8 @@ pub enum Input {
 impl Input {
     fn from_u16(value: u16) -> Option<Self> {
         match value {
-            1 => Some(Input::SDI),
-            2 => Some(Input::HDMI),
+            1 => Some(Input::Sdi),
+            2 => Some(Input::Hdmi),
             3 => Some(Input::Composite),
             4 => Some(Input::Component),
             5 => Some(Input::SVideo),
@@ -30,8 +30,8 @@ impl Input {
 impl fmt::Display for Input {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output = match self {
-            Input::SDI => "SDI",
-            Input::HDMI => "HDMI",
+            Input::Sdi => "SDI",
+            Input::Hdmi => "HDMI",
             Input::Composite => "Composite",
             Input::Component => "Component",
             Input::SVideo => "S-Video",
