@@ -2,7 +2,7 @@ use bytes::{Buf, Bytes};
 use thiserror::Error;
 use tracing::{debug, info};
 
-use crate::systeminfo::{Source, Version};
+use crate::{source::Source, systeminfo::Version};
 
 #[derive(Debug, Error)]
 pub enum Error {
