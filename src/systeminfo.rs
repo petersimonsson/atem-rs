@@ -1,12 +1,17 @@
 use core::fmt;
+use std::collections::HashMap;
 
 use bytes::{Buf, Bytes};
+
+use crate::source::Source;
 
 #[derive(Debug, Default)]
 pub struct SystemInfo {
     product: Box<str>,
     version: Version,
     topology: Topology,
+
+    sources: HashMap<u16, Source>,
 }
 
 #[allow(dead_code)]
@@ -33,6 +38,14 @@ impl SystemInfo {
 
     pub fn topology(&self) -> &Topology {
         &self.topology
+    }
+
+    pub fn set_source(&mut self, source: Source) {
+        self.sources.insert(source.id(), source);
+    }
+
+    pub fn source(&self, id: u16) -> Option<&Source> {
+        self.sources.get(&id)
     }
 }
 

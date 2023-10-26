@@ -42,6 +42,7 @@ pub fn parse_payload(connection: &mut Connection, payload: &mut Bytes) -> Result
             b"InPr" => {
                 let source = Source::parse(&mut data)?;
                 info!("{}", source);
+                connection.system_info.set_source(source);
             }
             _ => {
                 debug!(

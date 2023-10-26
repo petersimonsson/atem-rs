@@ -312,6 +312,10 @@ impl Source {
             available_on_me,
         })
     }
+
+    pub fn id(&self) -> u16 {
+        self.id
+    }
 }
 
 impl fmt::Display for Source {
