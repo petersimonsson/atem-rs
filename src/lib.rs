@@ -7,13 +7,12 @@ use std::net::SocketAddr;
 
 use bytes::BytesMut;
 use thiserror::Error;
-use tokio::net::UdpSocket;
+use tokio::{net::UdpSocket, sync::mpsc};
 use tracing::{debug, info};
 
 use crate::{
     packet::{Packet, PACKET_FLAG_ACK_REQUEST, PACKET_FLAG_HELLO},
     parser::parse_payload,
-    systeminfo::SystemInfo,
 };
 
 #[derive(Error, Debug)]
@@ -27,10 +26,14 @@ pub enum Error {
     ParserError(#[from] parser::Error),
 }
 
-pub struct Connection {
-    socket: UdpSocket,
+pub enum Message {
+    Connected,
+    Disconnected(Error),
+    ParsingFailed(Error),
+}
 
-    pub(crate) system_info: SystemInfo,
+pub struct Connection {
+    rx: mpsc::UnboundedReceiver<Message>,
 }
 
 impl Connection {
@@ -45,39 +48,14 @@ impl Connection {
         info!("Local address: {}", socket.local_addr()?);
         info!("ATEM switcher address: {}", remote_addr);
 
-        send_hello_packet(&socket).await?;
+        let (tx, rx) = mpsc::unbounded_channel();
+        tokio::task::spawn(async move { run(socket, tx).await });
 
-        Ok(Connection {
-            socket,
-            system_info: SystemInfo::default(),
-        })
+        Ok(Connection { rx })
     }
 
-    pub async fn process_packets(&mut self) -> Result<(), Error> {
-        let mut packet_id = 0;
-
-        loop {
-            let mut buf = BytesMut::with_capacity(1500);
-            let len = self.socket.recv_buf(&mut buf).await?;
-
-            if len > 0 {
-                let packet = Packet::deserialize(buf.freeze());
-
-                if packet.flags() & PACKET_FLAG_HELLO > 0 {
-                    debug!("Recieved Hello packet");
-
-                    send_ack(&self.socket, packet.uid(), 0x0, packet.id()).await?;
-                    continue;
-                } else if packet.flags() & PACKET_FLAG_ACK_REQUEST > 0 {
-                    packet_id += 1;
-                    send_ack(&self.socket, packet.uid(), packet_id, packet.id()).await?;
-                }
-
-                if let Some(mut payload) = packet.payload() {
-                    parse_payload(self, &mut payload)?;
-                }
-            }
-        }
+    pub async fn recv_message(&mut self) -> Option<Message> {
+        self.rx.recv().await
     }
 }
 
@@ -86,6 +64,52 @@ async fn send_hello_packet(socket: &UdpSocket) -> Result<(), Error> {
     socket.send(&packet.serialize()).await?;
 
     Ok(())
+}
+
+async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
+    let mut packet_id = 0;
+
+    if let Err(e) = send_hello_packet(&socket).await {
+        let _ = tx.send(Message::Disconnected(e));
+        return;
+    }
+
+    loop {
+        let mut buf = BytesMut::with_capacity(1500);
+        let len = match socket.recv_buf(&mut buf).await {
+            Ok(len) => len,
+            Err(e) => {
+                let _ = tx.send(Message::Disconnected(e.into()));
+                return;
+            }
+        };
+
+        if len > 0 {
+            let packet = Packet::deserialize(buf.freeze());
+
+            if packet.flags() & PACKET_FLAG_HELLO > 0 {
+                debug!("Recieved Hello packet");
+
+                if let Err(e) = send_ack(&socket, packet.uid(), 0x0, packet.id()).await {
+                    let _ = tx.send(Message::Disconnected(e.into()));
+                    return;
+                }
+                continue;
+            } else if packet.flags() & PACKET_FLAG_ACK_REQUEST > 0 {
+                packet_id += 1;
+                if let Err(e) = send_ack(&socket, packet.uid(), packet_id, packet.id()).await {
+                    let _ = tx.send(Message::Disconnected(e.into()));
+                    return;
+                }
+            }
+
+            if let Some(mut payload) = packet.payload() {
+                if let Err(e) = parse_payload(&mut payload) {
+                    let _ = tx.send(Message::ParsingFailed(e.into()));
+                }
+            }
+        }
+    }
 }
 
 async fn send_ack(socket: &UdpSocket, uid: u16, packet_id: u16, ack_id: u16) -> Result<(), Error> {
