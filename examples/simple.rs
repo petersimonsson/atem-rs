@@ -1,5 +1,5 @@
 use anyhow::Result;
-use atem_rs::Connection;
+use atem_rs::{Connection, Message};
 use clap::Parser;
 
 #[derive(Debug, Parser)]
@@ -15,7 +15,14 @@ async fn main() -> Result<()> {
 
     let mut atem = Connection::open(&args.address).await?;
 
-    atem.process_packets().await?;
+    loop {
+        match atem.recv_message().await {
+            Some(Message::Connected) => {}
+            Some(Message::Disconnected(e)) => return Err(e.into()),
+            Some(Message::ParsingFailed(e)) => println!("{:?}", e),
+            None => {}
+        }
+    }
 
-    Ok(())
+    //Ok(())
 }
