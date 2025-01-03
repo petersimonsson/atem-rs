@@ -7,22 +7,39 @@ use crate::parser::{self, parse_str};
 
 #[derive(Debug)]
 pub enum Input {
-    Sdi = 1,
-    Hdmi = 2,
-    Composite = 3,
-    Component = 4,
-    SVideo = 5,
+    Sdi,
+    Hdmi,
+    Composite,
+    Component,
+    SVideo,
+    Internal,
+    Unknown(u16),
 }
 
-impl Input {
-    fn from_u16(value: u16) -> Option<Self> {
+impl From<u16> for Input {
+    fn from(value: u16) -> Self {
         match value {
-            1 => Some(Input::Sdi),
-            2 => Some(Input::Hdmi),
-            3 => Some(Input::Composite),
-            4 => Some(Input::Component),
-            5 => Some(Input::SVideo),
-            _ => None,
+            1 => Input::Sdi,
+            2 => Input::Hdmi,
+            3 => Input::Composite,
+            4 => Input::Component,
+            5 => Input::SVideo,
+            256 => Input::Internal,
+            val => Input::Unknown(val),
+        }
+    }
+}
+
+impl From<Input> for u16 {
+    fn from(value: Input) -> Self {
+        match value {
+            Input::Sdi => 1,
+            Input::Hdmi => 2,
+            Input::Composite => 3,
+            Input::Component => 4,
+            Input::SVideo => 5,
+            Input::Internal => 256,
+            Input::Unknown(val) => val,
         }
     }
 }
@@ -30,11 +47,13 @@ impl Input {
 impl fmt::Display for Input {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output = match self {
-            Input::Sdi => "SDI",
-            Input::Hdmi => "HDMI",
-            Input::Composite => "Composite",
-            Input::Component => "Component",
-            Input::SVideo => "S-Video",
+            Input::Sdi => "SDI".to_string(),
+            Input::Hdmi => "HDMI".to_string(),
+            Input::Composite => "Composite".to_string(),
+            Input::Component => "Component".to_string(),
+            Input::SVideo => "S-Video".to_string(),
+            Input::Internal => "Internal".to_string(),
+            Input::Unknown(val) => format!("Unknown ({val})"),
         };
 
         write!(f, "{}", output)
@@ -310,7 +329,7 @@ pub struct Source {
     name: Option<String>,
     short_name: Option<String>,
     available_inputs: InputFlags,
-    active_input: Option<Input>,
+    active_input: Input,
     source_type: SourceType,
     available_functions: FunctionFlags,
     available_on_me: MixEffectFlags,
@@ -323,7 +342,7 @@ impl Source {
         let short_name = parse_str(&mut data.split_to(4))?;
         data.get_u16(); // Skip 2 bytes
         let available_inputs = InputFlags::from_bits(data.get_u16()).unwrap();
-        let active_input = Input::from_u16(data.get_u16());
+        let active_input = data.get_u16().into();
         let source_type = data.get_u8().into();
         data.get_u8(); // Skip byte
         let available_functions = FunctionFlags::from_bits(data.get_u8()).unwrap();
@@ -348,11 +367,7 @@ impl Source {
 
 impl fmt::Display for Source {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let input_str = if let Some(input) = &self.active_input {
-            format!("[{}] -> {}, ", self.available_inputs, input)
-        } else {
-            "".to_string()
-        };
+        let input_str = format!("[{}] -> {}, ", self.available_inputs, self.active_input);
 
         write!(
             f,
