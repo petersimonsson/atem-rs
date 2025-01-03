@@ -6,17 +6,17 @@ authors = ["Peter Simonsson <peter.simonsson@gmail.com>"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bitflags = "2.4.1"
+bitflags = "2.6"
 bytes = "1.5"
-thiserror = "1.0"
-tokio = { version = "1.33", features = ["net", "io-util"] }
+thiserror = "2.0"
+tokio = { version = "1.42", features = ["net", "io-util"] }
 tracing = "0.1"
 
 [dev-dependencies]
-anyhow = "1.0.75"
-clap = { version = "4.4.6", features = ["derive"] }
-tokio = { version = "1.33", features = ["net", "io-util", "macros", "rt-multi-thread"] }
-tracing-subscriber = "0.3.17"
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1.42", features = ["net", "io-util", "macros", "rt-multi-thread"] }
+tracing-subscriber = "0.3"
 
 [[example]]
 name = "simple"
