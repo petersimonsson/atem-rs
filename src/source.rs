@@ -43,32 +43,57 @@ impl fmt::Display for Input {
 
 #[derive(Debug)]
 pub enum SourceType {
-    External = 0,
-    Black = 1,
-    ColorBars = 2,
-    ColorGenerator = 3,
-    MediaPlayerFill = 4,
-    MediaPlayerKey = 5,
-    SuperSource = 6,
-    MEOutput = 128,
-    Auxiliary = 129,
-    Mask = 130,
+    External,
+    Black,
+    ColorBars,
+    ColorGenerator,
+    MediaPlayerFill,
+    MediaPlayerKey,
+    SuperSource,
+    MEOutput,
+    Auxiliary,
+    Mask,
+    Status,
+    Direct,
+    Unknown(u8),
 }
 
-impl SourceType {
-    fn from_u8(value: u8) -> Option<Self> {
+impl From<u8> for SourceType {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Some(SourceType::External),
-            1 => Some(SourceType::Black),
-            2 => Some(SourceType::ColorBars),
-            3 => Some(SourceType::ColorGenerator),
-            4 => Some(SourceType::MediaPlayerFill),
-            5 => Some(SourceType::MediaPlayerKey),
-            6 => Some(SourceType::SuperSource),
-            128 => Some(SourceType::MEOutput),
-            129 => Some(SourceType::Auxiliary),
-            130 => Some(SourceType::Mask),
-            _ => None,
+            0 => SourceType::External,
+            1 => SourceType::Black,
+            2 => SourceType::ColorBars,
+            3 => SourceType::ColorGenerator,
+            4 => SourceType::MediaPlayerFill,
+            5 => SourceType::MediaPlayerKey,
+            6 => SourceType::SuperSource,
+            7 => SourceType::Direct,
+            128 => SourceType::MEOutput,
+            129 => SourceType::Auxiliary,
+            130 => SourceType::Mask,
+            131 => SourceType::Status,
+            val => SourceType::Unknown(val),
+        }
+    }
+}
+
+impl From<SourceType> for u8 {
+    fn from(value: SourceType) -> Self {
+        match value {
+            SourceType::External => 0,
+            SourceType::Black => 1,
+            SourceType::ColorBars => 2,
+            SourceType::ColorGenerator => 3,
+            SourceType::MediaPlayerFill => 4,
+            SourceType::MediaPlayerKey => 5,
+            SourceType::SuperSource => 6,
+            SourceType::Direct => 7,
+            SourceType::MEOutput => 128,
+            SourceType::Auxiliary => 129,
+            SourceType::Mask => 130,
+            SourceType::Status => 131,
+            SourceType::Unknown(val) => val,
         }
     }
 }
@@ -76,16 +101,19 @@ impl SourceType {
 impl fmt::Display for SourceType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output = match self {
-            SourceType::External => "External",
-            SourceType::Black => "Black",
-            SourceType::ColorBars => "Color Bars",
-            SourceType::ColorGenerator => "Color Generator",
-            SourceType::MediaPlayerFill => "Media Player Fill",
-            SourceType::MediaPlayerKey => "Media Player Key",
-            SourceType::SuperSource => "SuperSource",
-            SourceType::MEOutput => "ME Output",
-            SourceType::Auxiliary => "Auxiliary",
-            SourceType::Mask => "Mask",
+            SourceType::External => "External".to_string(),
+            SourceType::Black => "Black".to_string(),
+            SourceType::ColorBars => "Color Bars".to_string(),
+            SourceType::ColorGenerator => "Color Generator".to_string(),
+            SourceType::MediaPlayerFill => "Media Player Fill".to_string(),
+            SourceType::MediaPlayerKey => "Media Player Key".to_string(),
+            SourceType::SuperSource => "SuperSource".to_string(),
+            SourceType::MEOutput => "ME Output".to_string(),
+            SourceType::Auxiliary => "Auxiliary".to_string(),
+            SourceType::Mask => "Mask".to_string(),
+            SourceType::Status => "Status".to_string(),
+            SourceType::Direct => "Direct".to_string(),
+            SourceType::Unknown(val) => format!("Unknown ({val})"),
         };
 
         write!(f, "{}", output)
@@ -296,7 +324,7 @@ impl Source {
         data.get_u16(); // Skip 2 bytes
         let available_inputs = InputFlags::from_bits(data.get_u16()).unwrap();
         let active_input = Input::from_u16(data.get_u16());
-        let source_type = SourceType::from_u8(data.get_u8()).unwrap();
+        let source_type = data.get_u8().into();
         data.get_u8(); // Skip byte
         let available_functions = FunctionFlags::from_bits(data.get_u8()).unwrap();
         let available_on_me = MixEffectFlags::from_bits(data.get_u8()).unwrap();
