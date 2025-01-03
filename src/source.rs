@@ -153,48 +153,28 @@ bitflags! {
 
 impl fmt::Display for InputFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut output = String::new();
+        let mut output = Vec::new();
 
         if self.contains(InputFlags::SDI) {
-            output += "SDI";
+            output.push("SDI");
         }
         if self.contains(InputFlags::HDMI) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "HDMI";
+            output.push("HDMI");
         }
         if self.contains(InputFlags::COMPOSITE) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "Composite";
+            output.push("Composite");
         }
         if self.contains(InputFlags::COMPONENT) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "Component";
+            output.push("Component");
         }
         if self.contains(InputFlags::SVIDEO) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "S-Video";
+            output.push("S-Video");
         }
         if self.contains(InputFlags::INTERNAL) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "Internal";
+            output.push("Internal");
         }
 
-        write!(f, "{}", output)
+        write!(f, "{}", output.join(", "))
     }
 }
 
@@ -211,41 +191,25 @@ bitflags! {
 
 impl fmt::Display for FunctionFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut output = String::new();
+        let mut output = Vec::new();
 
         if self.contains(FunctionFlags::AUXILIARY) {
-            output += "Auxiliary";
+            output.push("Auxiliary");
         }
         if self.contains(FunctionFlags::MULTIVIEWER) {
-            if !output.is_empty() {
-                output += ", "
-            }
-
-            output += "Multiviewer";
+            output.push("Multiviewer");
         }
         if self.contains(FunctionFlags::SUPERSOURCE_ART) {
-            if !output.is_empty() {
-                output += ", "
-            }
-
-            output += "SuperSource Art";
+            output.push("SuperSource Art");
         }
         if self.contains(FunctionFlags::SUPERSOURCE_BOX) {
-            if !output.is_empty() {
-                output += ", "
-            }
-
-            output += "SuperSource Box";
+            output.push("SuperSource Box");
         }
         if self.contains(FunctionFlags::KEY_SOURCES) {
-            if !output.is_empty() {
-                output += ", "
-            }
-
-            output += "Key Sources";
+            output.push("Key Sources");
         }
 
-        write!(f, "{}", output)
+        write!(f, "{}", output.join(", "))
     }
 }
 
@@ -265,61 +229,33 @@ bitflags! {
 
 impl fmt::Display for MixEffectFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut output = String::new();
+        let mut output = Vec::new();
         if self.contains(MixEffectFlags::ME1) {
-            output += "ME1";
+            output.push("ME1");
         }
         if self.contains(MixEffectFlags::ME2) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "ME2";
+            output.push("ME2");
         }
         if self.contains(MixEffectFlags::ME3) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "ME3";
+            output.push("ME3");
         }
         if self.contains(MixEffectFlags::ME4) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "ME4";
+            output.push("ME4");
         }
         if self.contains(MixEffectFlags::ME5) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "ME5";
+            output.push("ME5");
         }
         if self.contains(MixEffectFlags::ME6) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "ME6";
+            output.push("ME6");
         }
         if self.contains(MixEffectFlags::ME7) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "ME7";
+            output.push("ME7");
         }
         if self.contains(MixEffectFlags::ME8) {
-            if !output.is_empty() {
-                output += ", ";
-            }
-
-            output += "ME8";
+            output.push("ME8");
         }
 
-        write!(f, "{}", output)
+        write!(f, "{}", output.join(", "))
     }
 }
 
