@@ -39,6 +39,18 @@ pub fn parse_payload(payload: &mut Bytes) -> Result<(), Error> {
                 let source = Source::parse(&mut data)?;
                 info!("{}", source);
             }
+            b"PrgI" => {
+                let me = data.get_u8();
+                data.get_u8(); // Skip
+                let source = data.get_u16();
+                info!("Program input ME {}: {}", me, source);
+            }
+            b"PrvI" => {
+                let me = data.get_u8();
+                data.get_u8(); // Skip
+                let source = data.get_u16();
+                info!("Preview input ME {}: {}", me, source);
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
