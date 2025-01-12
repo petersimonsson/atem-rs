@@ -29,6 +29,7 @@ pub enum Command {
     TransitionPosition(TransitionPosition),
     Time(Time),
     TallyInputs(TallyInputs),
+    TallySources(TallySources),
 }
 
 impl Command {
@@ -77,6 +78,10 @@ impl Command {
                 let tally_inputs = TallyInputs::parse(&mut data);
                 Ok(Command::TallyInputs(tally_inputs))
             }
+            b"TlSr" => {
+                let tally_sources = TallySources::parse(&mut data);
+                Ok(Command::TallySources(tally_sources))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -102,6 +107,7 @@ impl Display for Command {
             Command::TransitionPosition(position) => write!(f, "Transition position: {position}"),
             Command::Time(time) => write!(f, "Time: {time}"),
             Command::TallyInputs(tallys) => write!(f, "Tally inputs: {tallys}"),
+            Command::TallySources(tallys) => write!(f, "Tally sources: {tallys}"),
         }
     }
 }
@@ -236,6 +242,58 @@ impl Display for TallyInputs {
             .map(|(index, state)| format!("Input: {} State: {}", index + 1, state))
             .collect::<Vec<String>>()
             .join(", ");
+        write!(f, "{}", state_str)
+    }
+}
+
+pub struct SourceTally {
+    source_id: u16,
+    state: TallyState,
+}
+
+impl SourceTally {
+    pub fn new(source_id: u16, state: TallyState) -> Self {
+        SourceTally { source_id, state }
+    }
+}
+
+impl Display for SourceTally {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Source: {} {}", self.source_id, self.state)
+    }
+}
+
+pub struct TallySources {
+    tally_states: Vec<SourceTally>,
+}
+
+impl TallySources {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let count = data.get_u16();
+        let mut tally_states: Vec<SourceTally> = Vec::default();
+
+        for _ in 0..count {
+            let source_id = data.get_u16();
+            let byte = data.get_u8();
+            tally_states.push(SourceTally::new(
+                source_id,
+                TallyState::new((byte & 0x01) > 0, (byte & 0x02) > 0),
+            ));
+        }
+
+        TallySources { tally_states }
+    }
+}
+
+impl Display for TallySources {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let state_str = self
+            .tally_states
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+
         write!(f, "{}", state_str)
     }
 }
