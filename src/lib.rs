@@ -85,27 +85,31 @@ async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
         };
 
         if len > 0 {
-            let packet = Packet::deserialize(buf.freeze());
+            let mut packets = buf.freeze();
 
-            if packet.flags() & PACKET_FLAG_HELLO > 0 {
-                debug!("Recieved Hello packet");
+            while packets.len() > 0 {
+                let packet = Packet::deserialize(&mut packets);
 
-                if let Err(e) = send_ack(&socket, packet.uid(), 0x0, packet.id()).await {
-                    let _ = tx.send(Message::Disconnected(e.into()));
-                    return;
+                if packet.flags() & PACKET_FLAG_HELLO > 0 {
+                    debug!("Recieved Hello packet");
+
+                    if let Err(e) = send_ack(&socket, packet.uid(), 0x0, packet.id()).await {
+                        let _ = tx.send(Message::Disconnected(e.into()));
+                        return;
+                    }
+                    continue;
+                } else if packet.flags() & PACKET_FLAG_ACK_REQUEST > 0 {
+                    packet_id += 1;
+                    if let Err(e) = send_ack(&socket, packet.uid(), packet_id, packet.id()).await {
+                        let _ = tx.send(Message::Disconnected(e.into()));
+                        return;
+                    }
                 }
-                continue;
-            } else if packet.flags() & PACKET_FLAG_ACK_REQUEST > 0 {
-                packet_id += 1;
-                if let Err(e) = send_ack(&socket, packet.uid(), packet_id, packet.id()).await {
-                    let _ = tx.send(Message::Disconnected(e.into()));
-                    return;
-                }
-            }
 
-            if let Some(mut payload) = packet.payload() {
-                if let Err(e) = parse_payload(&mut payload) {
-                    let _ = tx.send(Message::ParsingFailed(e.into()));
+                if let Some(mut payload) = packet.payload() {
+                    if let Err(e) = parse_payload(&mut payload) {
+                        let _ = tx.send(Message::ParsingFailed(e.into()));
+                    }
                 }
             }
         }
