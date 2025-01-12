@@ -3,7 +3,7 @@ use bytes::{Buf, Bytes};
 
 use std::fmt;
 
-use crate::parser::{self, parse_str};
+use crate::{command, parser::parse_str};
 
 #[derive(Debug)]
 pub enum Input {
@@ -272,7 +272,7 @@ pub struct Source {
 }
 
 impl Source {
-    pub fn parse(data: &mut Bytes) -> Result<Self, parser::Error> {
+    pub fn parse(data: &mut Bytes) -> Result<Self, command::Error> {
         let id = data.get_u16();
         let name = parse_str(&mut data.split_to(20))?;
         let short_name = parse_str(&mut data.split_to(4))?;
