@@ -34,6 +34,7 @@ pub enum Command {
     PowerState(PowerState),
     TransitionStyleSelection(TransitionStyleSelection),
     AuxSource(SourceSelection),
+    MultiViewInput(MultiViewInput),
 }
 
 impl Command {
@@ -100,6 +101,10 @@ impl Command {
                 let source_selection = SourceSelection::parse(&mut data);
                 Ok(Command::AuxSource(source_selection))
             }
+            b"MvIn" => {
+                let multiview_input = MultiViewInput::parse(&mut data);
+                Ok(Command::MultiViewInput(multiview_input))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -130,9 +135,8 @@ impl Display for Command {
             Command::TransitionStyleSelection(selection) => {
                 write!(f, "Transition style selection: {selection}")
             }
-            Command::AuxSource(selection) => {
-                write!(f, "Aux: {selection}")
-            }
+            Command::AuxSource(selection) => write!(f, "Aux: {selection}"),
+            Command::MultiViewInput(input) => write!(f, "Multiview input: {input}"),
         }
     }
 }
@@ -309,6 +313,36 @@ impl Display for TransitionStyleSelection {
             self.current_selection,
             self.next_style,
             self.next_selection
+        )
+    }
+}
+
+pub struct MultiViewInput {
+    multiview: u8,
+    input: u8,
+    source: u16,
+}
+
+impl MultiViewInput {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let multiview = data.get_u8();
+        let input = data.get_u8();
+        let source = data.get_u16();
+
+        MultiViewInput {
+            multiview,
+            input,
+            source,
+        }
+    }
+}
+
+impl Display for MultiViewInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Multiview: {} Input: {} Source: {}",
+            self.multiview, self.input, self.source
         )
     }
 }
