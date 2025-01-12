@@ -33,6 +33,7 @@ pub enum Command {
     TallySources(TallySources),
     PowerState(PowerState),
     TransitionStyleSelection(TransitionStyleSelection),
+    AuxSource(SourceSelection),
 }
 
 impl Command {
@@ -95,6 +96,10 @@ impl Command {
                     transition_style_selection,
                 ))
             }
+            b"AuxS" => {
+                let source_selection = SourceSelection::parse(&mut data);
+                Ok(Command::AuxSource(source_selection))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -115,8 +120,8 @@ impl Display for Command {
             Command::Product(product) => write!(f, "Product: {product}"),
             Command::Topology(topology) => write!(f, "Topology: {topology}"),
             Command::Source(source) => write!(f, "{source}"),
-            Command::ProgramInput(selection) => write!(f, "Program input: {selection}"),
-            Command::PreviewInput(selection) => write!(f, "Preview input: {selection}"),
+            Command::ProgramInput(selection) => write!(f, "Program input ME: {selection}"),
+            Command::PreviewInput(selection) => write!(f, "Preview input ME: {selection}"),
             Command::TransitionPosition(position) => write!(f, "Transition position: {position}"),
             Command::Time(time) => write!(f, "Time: {time}"),
             Command::TallyInputs(tallys) => write!(f, "Tally inputs: {tallys}"),
@@ -125,28 +130,34 @@ impl Display for Command {
             Command::TransitionStyleSelection(selection) => {
                 write!(f, "Transition style selection: {selection}")
             }
+            Command::AuxSource(selection) => {
+                write!(f, "Aux: {selection}")
+            }
         }
     }
 }
 
 pub struct SourceSelection {
-    me: u8,
+    destination: u8,
     source_id: u16,
 }
 
 impl SourceSelection {
     pub fn parse(data: &mut Bytes) -> Self {
-        let me = data.get_u8();
+        let destination = data.get_u8();
         data.get_u8(); // Skip
         let source_id = data.get_u16();
 
-        SourceSelection { me, source_id }
+        SourceSelection {
+            destination,
+            source_id,
+        }
     }
 }
 
 impl Display for SourceSelection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ME: {} Source: {}", self.me, self.source_id)
+        write!(f, "{} Source: {}", self.destination, self.source_id)
     }
 }
 
