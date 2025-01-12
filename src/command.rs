@@ -14,8 +14,8 @@ use crate::{
 pub enum Error {
     #[error("String parsing failed")]
     Utf8Error(#[from] std::string::FromUtf8Error),
-    #[error("Unknown command ({0:?})")]
-    UnknownCommand(Vec<u8>),
+    #[error("Unknown command ({0})")]
+    UnknownCommand(String),
 }
 
 #[allow(dead_code)]
@@ -26,6 +26,8 @@ pub enum Command {
     Source(Source),
     ProgramInput(SourceSelection),
     PreviewInput(SourceSelection),
+    TransitionPosition(TransitionPosition),
+    Time(Time),
 }
 
 impl Command {
@@ -62,6 +64,14 @@ impl Command {
                 let source_selection = SourceSelection::parse(&mut data);
                 Ok(Command::PreviewInput(source_selection))
             }
+            b"TrPs" => {
+                let transition_position = TransitionPosition::parse(&mut data);
+                Ok(Command::TransitionPosition(transition_position))
+            }
+            b"Time" => {
+                let time = Time::parse(&mut data);
+                Ok(Command::Time(time))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -69,7 +79,7 @@ impl Command {
                     &data[..],
                     data_size
                 );
-                Err(Error::UnknownCommand(cmd.to_vec()))
+                Err(Error::UnknownCommand(String::from_utf8(cmd.to_vec())?))
             }
         }
     }
@@ -84,6 +94,8 @@ impl Display for Command {
             Command::Source(source) => write!(f, "{source}"),
             Command::ProgramInput(selection) => write!(f, "Program input: {selection}"),
             Command::PreviewInput(selection) => write!(f, "Preview input: {selection}"),
+            Command::TransitionPosition(position) => write!(f, "Transition position: {position}"),
+            Command::Time(time) => write!(f, "Time: {time}"),
         }
     }
 }
@@ -106,5 +118,69 @@ impl SourceSelection {
 impl Display for SourceSelection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ME: {} Source: {}", self.me, self.source_id)
+    }
+}
+
+pub struct TransitionPosition {
+    me: u8,
+    frame_count: u8,
+    position: u16,
+}
+
+impl TransitionPosition {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        data.get_u8(); // Skip
+        let frame_count = data.get_u8();
+        data.get_u8(); // Skip
+        let position = data.get_u16();
+
+        TransitionPosition {
+            me,
+            frame_count,
+            position,
+        }
+    }
+}
+
+impl Display for TransitionPosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ME: {} Frame count: {} Position: {}",
+            self.me, self.frame_count, self.position
+        )
+    }
+}
+
+pub struct Time {
+    hour: u8,
+    minute: u8,
+    second: u8,
+    frame: u8,
+}
+
+impl Time {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let hour = data.get_u8();
+        let minute = data.get_u8();
+        let second = data.get_u8();
+        let frame = data.get_u8();
+        Time {
+            hour,
+            minute,
+            second,
+            frame,
+        }
+    }
+}
+
+impl Display for Time {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:02}:{:02}:{:02}:{:02}",
+            self.hour, self.minute, self.second, self.frame
+        )
     }
 }
