@@ -52,16 +52,18 @@ impl Packet {
         bytes.freeze()
     }
 
-    pub fn deserialize(mut packet: Bytes) -> Self {
+    pub fn deserialize(packet: &mut Bytes) -> Self {
         let flag_size = packet.get_u16();
         let flags = ((flag_size & 0xf800) >> 11) as u8;
+        let size = flag_size & 0x07ff;
         let uid = packet.get_u16();
         let ack_id = packet.get_u16();
         packet.get_u32();
         let id = packet.get_u16();
 
-        let payload = if packet.remaining() > 0 {
-            Some(packet)
+        let payload_size = size - HEADER_SIZE;
+        let payload = if payload_size > 0 {
+            Some(packet.split_to(payload_size as usize))
         } else {
             None
         };
@@ -92,16 +94,9 @@ impl Packet {
     }
 
     pub fn new_hello_packet() -> Self {
-        let mut hello_data = BytesMut::new();
-        hello_data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        let hello_data = Bytes::from(vec![0x01u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
 
-        Packet::new(
-            PACKET_FLAG_HELLO,
-            0x1337,
-            0x0000,
-            0x0000,
-            Some(hello_data.freeze()),
-        )
+        Packet::new(PACKET_FLAG_HELLO, 0x1337, 0x0000, 0x0000, Some(hello_data))
     }
 }
 
@@ -137,7 +132,8 @@ mod tests {
         let mut buf = BytesMut::new();
         buf.extend_from_slice(&data);
 
-        let packet = Packet::deserialize(buf.freeze());
+        let mut packets = buf.freeze();
+        let packet = Packet::deserialize(&mut packets);
 
         let mut hello_data = BytesMut::new();
         hello_data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
