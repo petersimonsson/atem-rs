@@ -19,7 +19,10 @@ async fn main() -> Result<()> {
         match atem.recv_message().await {
             Some(Message::Connected) => {}
             Some(Message::Disconnected(e)) => return Err(e.into()),
-            Some(Message::ParsingFailed(e)) => println!("{:?}", e),
+            Some(Message::ParsingFailed(e)) => println!("{}", e.to_string()),
+            Some(Message::Command(c)) => {
+                println!("{}", c);
+            }
             None => {}
         }
     }

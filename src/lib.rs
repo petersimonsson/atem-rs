@@ -1,3 +1,4 @@
+pub mod command;
 mod packet;
 mod parser;
 mod source;
@@ -10,10 +11,8 @@ use thiserror::Error;
 use tokio::{net::UdpSocket, sync::mpsc};
 use tracing::{debug, info};
 
-use crate::{
-    packet::{Packet, PACKET_FLAG_ACK_REQUEST, PACKET_FLAG_HELLO},
-    parser::parse_payload,
-};
+use crate::command::Command;
+use crate::packet::{Packet, PACKET_FLAG_ACK_REQUEST, PACKET_FLAG_HELLO};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -22,14 +21,15 @@ pub enum Error {
     #[error("ATEM connection failed")]
     SocketError(#[from] std::io::Error),
 
-    #[error("Parsing failed")]
-    ParserError(#[from] parser::Error),
+    #[error("Parsing failed: {0}")]
+    CommandError(#[from] command::Error),
 }
 
 pub enum Message {
     Connected,
     Disconnected(Error),
     ParsingFailed(Error),
+    Command(Command),
 }
 
 pub struct Connection {
@@ -87,28 +87,35 @@ async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
         if len > 0 {
             let mut packets = buf.freeze();
 
-            while packets.len() > 0 {
+            while !packets.is_empty() {
                 let packet = Packet::deserialize(&mut packets);
 
                 if packet.flags() & PACKET_FLAG_HELLO > 0 {
                     debug!("Recieved Hello packet");
 
                     if let Err(e) = send_ack(&socket, packet.uid(), 0x0, packet.id()).await {
-                        let _ = tx.send(Message::Disconnected(e.into()));
+                        let _ = tx.send(Message::Disconnected(e));
                         return;
                     }
                     continue;
                 } else if packet.flags() & PACKET_FLAG_ACK_REQUEST > 0 {
                     packet_id += 1;
                     if let Err(e) = send_ack(&socket, packet.uid(), packet_id, packet.id()).await {
-                        let _ = tx.send(Message::Disconnected(e.into()));
+                        let _ = tx.send(Message::Disconnected(e));
                         return;
                     }
                 }
 
                 if let Some(mut payload) = packet.payload() {
-                    if let Err(e) = parse_payload(&mut payload) {
-                        let _ = tx.send(Message::ParsingFailed(e.into()));
+                    while !payload.is_empty() {
+                        match Command::parse(&mut payload) {
+                            Ok(command) => {
+                                let _ = tx.send(Message::Command(command));
+                            }
+                            Err(e) => {
+                                let _ = tx.send(Message::ParsingFailed(e.into()));
+                            }
+                        }
                     }
                 }
             }
