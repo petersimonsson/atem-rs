@@ -3,6 +3,7 @@ mod packet;
 mod parser;
 mod source;
 mod systeminfo;
+pub mod tally;
 
 use std::net::SocketAddr;
 
