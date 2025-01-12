@@ -28,6 +28,7 @@ pub enum Command {
     PreviewInput(SourceSelection),
     TransitionPosition(TransitionPosition),
     Time(Time),
+    TallyInputs(TallyInputs),
 }
 
 impl Command {
@@ -72,6 +73,10 @@ impl Command {
                 let time = Time::parse(&mut data);
                 Ok(Command::Time(time))
             }
+            b"TlIn" => {
+                let tally_inputs = TallyInputs::parse(&mut data);
+                Ok(Command::TallyInputs(tally_inputs))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -96,6 +101,7 @@ impl Display for Command {
             Command::PreviewInput(selection) => write!(f, "Preview input: {selection}"),
             Command::TransitionPosition(position) => write!(f, "Transition position: {position}"),
             Command::Time(time) => write!(f, "Time: {time}"),
+            Command::TallyInputs(tallys) => write!(f, "Tally inputs: {tallys}"),
         }
     }
 }
@@ -182,5 +188,54 @@ impl Display for Time {
             "{:02}:{:02}:{:02}:{:02}",
             self.hour, self.minute, self.second, self.frame
         )
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct TallyState {
+    program: bool,
+    preview: bool,
+}
+
+impl Display for TallyState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Program: {} Preview: {}", self.program, self.preview)
+    }
+}
+
+impl TallyState {
+    pub fn new(program: bool, preview: bool) -> Self {
+        TallyState { program, preview }
+    }
+}
+
+pub struct TallyInputs {
+    tally_states: Vec<TallyState>,
+}
+
+impl TallyInputs {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let count = data.get_u16();
+        let mut tally_states: Vec<TallyState> = Vec::default();
+
+        for _ in 0..count {
+            let byte = data.get_u8();
+            tally_states.push(TallyState::new((byte & 0x01) > 0, (byte & 0x02) > 0));
+        }
+
+        TallyInputs { tally_states }
+    }
+}
+
+impl Display for TallyInputs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let state_str = self
+            .tally_states
+            .iter()
+            .enumerate()
+            .map(|(index, state)| format!("Input: {} State: {}", index + 1, state))
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "{}", state_str)
     }
 }
