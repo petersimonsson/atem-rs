@@ -93,6 +93,7 @@ impl fmt::Display for Topology {
 }
 
 impl Topology {
+    // TODO: Figure out if the parsing is correct
     pub fn parse(data: &mut Bytes) -> Self {
         let me_count = data.get_u8();
         let source_count = data.get_u8();
@@ -104,7 +105,9 @@ impl Topology {
         let key_count = data.get_u8();
         let stinger_count = data.get_u8();
         let dve_count = data.get_u8();
-        let supersource_count = data.get_u8(); // FIXME: This one feels wrong to me.
+        data.get_u8(); // Unknown
+        let supersource_count = data.get_u8();
+        data.get_u8(); // Unknown
         let has_sd = data.get_u8() != 0;
 
         Topology {
