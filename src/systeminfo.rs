@@ -124,3 +124,25 @@ impl Topology {
         }
     }
 }
+
+pub struct PowerState {
+    primary: bool,
+    secondary: bool,
+}
+
+impl PowerState {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let states = data.get_u8();
+
+        PowerState {
+            primary: (states & 0x01) > 0,
+            secondary: (states & 0x02) > 0,
+        }
+    }
+}
+
+impl fmt::Display for PowerState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Primary: {} Secondary: {}", self.primary, self.secondary)
+    }
+}

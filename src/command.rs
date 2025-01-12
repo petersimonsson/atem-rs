@@ -7,7 +7,7 @@ use tracing::debug;
 use crate::{
     parser::parse_str,
     source::Source,
-    systeminfo::{Topology, Version},
+    systeminfo::{PowerState, Topology, Version},
     tally::{TallyInputs, TallySources},
 };
 
@@ -31,6 +31,7 @@ pub enum Command {
     Time(Time),
     TallyInputs(TallyInputs),
     TallySources(TallySources),
+    PowerState(PowerState),
 }
 
 impl Command {
@@ -83,6 +84,10 @@ impl Command {
                 let tally_sources = TallySources::parse(&mut data);
                 Ok(Command::TallySources(tally_sources))
             }
+            b"Powr" => {
+                let power_state = PowerState::parse(&mut data);
+                Ok(Command::PowerState(power_state))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -109,6 +114,7 @@ impl Display for Command {
             Command::Time(time) => write!(f, "Time: {time}"),
             Command::TallyInputs(tallys) => write!(f, "Tally inputs: {tallys}"),
             Command::TallySources(tallys) => write!(f, "Tally sources: {tallys}"),
+            Command::PowerState(power) => write!(f, "Power state: {power}"),
         }
     }
 }
