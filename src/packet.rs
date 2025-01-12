@@ -2,11 +2,11 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 const HEADER_SIZE: u16 = 0x0c;
 
-pub const PACKET_FLAG_ACK_REQUEST: u8 = 0x01;
-pub const PACKET_FLAG_HELLO: u8 = 0x02;
+const PACKET_FLAG_ACK_REQUEST: u8 = 0x01;
+const PACKET_FLAG_HELLO: u8 = 0x02;
 #[allow(dead_code)]
-pub const PACKET_FLAG_RESEND: u8 = 0x04;
-pub const PACKET_FLAG_ACK: u8 = 0x10;
+const PACKET_FLAG_RESEND: u8 = 0x04;
+const PACKET_FLAG_ACK: u8 = 0x10;
 
 #[derive(Debug, PartialEq)]
 pub struct Packet {
@@ -27,6 +27,10 @@ impl Packet {
             id,
             payload,
         }
+    }
+
+    pub fn new_ack(uid: u16, ack_id: u16, id: u16) -> Self {
+        Packet::new(PACKET_FLAG_ACK, uid, ack_id, id, None)
     }
 
     pub fn serialize(&self) -> Bytes {
@@ -77,16 +81,20 @@ impl Packet {
         }
     }
 
-    pub fn flags(&self) -> u8 {
-        self.flags
-    }
-
     pub fn id(&self) -> u16 {
         self.id
     }
 
     pub fn uid(&self) -> u16 {
         self.uid
+    }
+
+    pub fn ack_request(&self) -> bool {
+        self.flags & PACKET_FLAG_ACK_REQUEST > 0
+    }
+
+    pub fn is_hello(&self) -> bool {
+        self.flags & PACKET_FLAG_HELLO > 0
     }
 
     pub fn payload(&self) -> Option<Bytes> {

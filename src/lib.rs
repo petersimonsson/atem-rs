@@ -12,7 +12,7 @@ use tokio::{net::UdpSocket, sync::mpsc};
 use tracing::{debug, info};
 
 use crate::command::Command;
-use crate::packet::{Packet, PACKET_FLAG_ACK_REQUEST, PACKET_FLAG_HELLO};
+use crate::packet::Packet;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -90,7 +90,7 @@ async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
             while !packets.is_empty() {
                 let packet = Packet::deserialize(&mut packets);
 
-                if packet.flags() & PACKET_FLAG_HELLO > 0 {
+                if packet.is_hello() {
                     debug!("Recieved Hello packet");
 
                     if let Err(e) = send_ack(&socket, packet.uid(), 0x0, packet.id()).await {
@@ -98,7 +98,7 @@ async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
                         return;
                     }
                     continue;
-                } else if packet.flags() & PACKET_FLAG_ACK_REQUEST > 0 {
+                } else if packet.ack_request() {
                     packet_id += 1;
                     if let Err(e) = send_ack(&socket, packet.uid(), packet_id, packet.id()).await {
                         let _ = tx.send(Message::Disconnected(e));
@@ -124,7 +124,7 @@ async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
 }
 
 async fn send_ack(socket: &UdpSocket, uid: u16, packet_id: u16, ack_id: u16) -> Result<(), Error> {
-    let packet = Packet::new(packet::PACKET_FLAG_ACK, uid, ack_id, packet_id, None);
+    let packet = Packet::new_ack(uid, ack_id, packet_id);
 
     debug!("Send Ack for {}", ack_id);
 
