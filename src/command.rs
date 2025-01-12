@@ -32,6 +32,7 @@ pub enum Command {
     TallyInputs(TallyInputs),
     TallySources(TallySources),
     PowerState(PowerState),
+    TransitionStyleSelection(TransitionStyleSelection),
 }
 
 impl Command {
@@ -88,6 +89,12 @@ impl Command {
                 let power_state = PowerState::parse(&mut data);
                 Ok(Command::PowerState(power_state))
             }
+            b"TrSS" => {
+                let transition_style_selection = TransitionStyleSelection::parse(&mut data);
+                Ok(Command::TransitionStyleSelection(
+                    transition_style_selection,
+                ))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -115,6 +122,9 @@ impl Display for Command {
             Command::TallyInputs(tallys) => write!(f, "Tally inputs: {tallys}"),
             Command::TallySources(tallys) => write!(f, "Tally sources: {tallys}"),
             Command::PowerState(power) => write!(f, "Power state: {power}"),
+            Command::TransitionStyleSelection(selection) => {
+                write!(f, "Transition style selection: {selection}")
+            }
         }
     }
 }
@@ -200,6 +210,94 @@ impl Display for Time {
             f,
             "{:02}:{:02}:{:02}:{:02}",
             self.hour, self.minute, self.second, self.frame
+        )
+    }
+}
+
+pub enum TransitionStyle {
+    Mix,
+    Dip,
+    Wipe,
+    Dve,
+    Stinger,
+    Unknown(u8),
+}
+
+impl From<u8> for TransitionStyle {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => TransitionStyle::Mix,
+            1 => TransitionStyle::Dip,
+            2 => TransitionStyle::Wipe,
+            3 => TransitionStyle::Dve,
+            4 => TransitionStyle::Stinger,
+            u => TransitionStyle::Unknown(u),
+        }
+    }
+}
+
+impl From<TransitionStyle> for u8 {
+    fn from(value: TransitionStyle) -> Self {
+        match value {
+            TransitionStyle::Mix => 0,
+            TransitionStyle::Dip => 1,
+            TransitionStyle::Wipe => 2,
+            TransitionStyle::Dve => 3,
+            TransitionStyle::Stinger => 4,
+            TransitionStyle::Unknown(u) => u,
+        }
+    }
+}
+
+impl Display for TransitionStyle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransitionStyle::Mix => write!(f, "Mix"),
+            TransitionStyle::Dip => write!(f, "Dip"),
+            TransitionStyle::Wipe => write!(f, "Wipe"),
+            TransitionStyle::Dve => write!(f, "DVE"),
+            TransitionStyle::Stinger => write!(f, "Stinger"),
+            TransitionStyle::Unknown(u) => write!(f, "Unknown ({u})"),
+        }
+    }
+}
+
+pub struct TransitionStyleSelection {
+    me: u8,
+    current_style: TransitionStyle,
+    current_selection: u8,
+    next_style: TransitionStyle,
+    next_selection: u8,
+}
+
+impl TransitionStyleSelection {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let current_style = data.get_u8();
+        let current_selection = data.get_u8();
+        let next_style = data.get_u8();
+        let next_selection = data.get_u8();
+
+        TransitionStyleSelection {
+            me,
+            current_style: current_style.into(),
+            current_selection,
+            next_style: next_style.into(),
+            next_selection,
+        }
+    }
+}
+
+impl Display for TransitionStyleSelection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ME: {} Current style: {} Current selection: {} Next style: {} Next selection: {}",
+            self.me,
+            self.current_style,
+            self.current_selection,
+            self.next_style,
+            self.next_selection
         )
     }
 }
