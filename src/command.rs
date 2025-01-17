@@ -7,7 +7,7 @@ use tracing::debug;
 use crate::{
     parser::parse_str,
     source::Source,
-    systeminfo::{PowerState, TimeCodeState, Topology, Version},
+    systeminfo::{PowerState, TimeCodeState, Topology, Version, VideoMode},
     tally::{TallyInputs, TallySources},
 };
 
@@ -36,6 +36,7 @@ pub enum Command {
     AuxSource(SourceSelection),
     MultiViewInput(MultiViewInput),
     TimeCodeState(TimeCodeState),
+    VideoMode(VideoMode),
 }
 
 impl Command {
@@ -110,6 +111,10 @@ impl Command {
                 let timecode_state = TimeCodeState::parse(&mut data);
                 Ok(Command::TimeCodeState(timecode_state))
             }
+            b"VidM" => {
+                let videomode = VideoMode::parse(&mut data);
+                Ok(Command::VideoMode(videomode))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -143,6 +148,7 @@ impl Display for Command {
             Command::AuxSource(selection) => write!(f, "Aux: {selection}"),
             Command::MultiViewInput(input) => write!(f, "Multiview input: {input}"),
             Command::TimeCodeState(state) => write!(f, "Time code state: {state}"),
+            Command::VideoMode(mode) => write!(f, "Video mode: {mode}"),
         }
     }
 }
