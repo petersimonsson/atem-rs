@@ -74,53 +74,64 @@ impl fmt::Display for Version {
 pub struct Topology {
     me_count: u8,
     source_count: u8,
-    color_gen_count: u8,
-    aux_count: u8,
     dsk_count: u8,
-    key_count: u8,
+    aux_count: u8,
+    mixminus_output_count: u8,
+    mediaplayer_count: u8,
+    multiviewer_count: u8,
+    rs485_count: u8,
+    hyperdeck_count: u8,
     stinger_count: u8,
     dve_count: u8,
     supersource_count: u8,
-    has_sd: bool,
+    talkback_count: u8,
+    sdi_count: u8,
+    scalers_available: u8,
 }
 
 impl fmt::Display for Topology {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "M/Es: {}, Sources: {}, Color generators: {}, Aux: {}, DSKs: {}, Keys: {}, Stingers: {}, DVEs: {}, SuperSources: {}, Has SD: {}",
-        self.me_count, self.source_count, self.color_gen_count, self.aux_count, self.dsk_count, self.key_count, self.stinger_count, self.dve_count,
-        self.supersource_count, self.has_sd)
+        write!(f, "M/Es: {}, Sources: {}, DSKs: {}, Aux: {}, Mix minus outputs: {}, Mediaplayers: {}, Multiviewers: {}, RS-485: {}, Hyperdecks: {}, Stingers: {}, DVEs: {}, Supersources: {}, Talkbacks: {}, SDIs: {}, Scalers: {}",
+        self.me_count, self.source_count, self.dsk_count, self.aux_count, self.mixminus_output_count, self.mediaplayer_count, self.multiviewer_count, self.rs485_count,
+        self.hyperdeck_count, self.stinger_count, self.dve_count, self.supersource_count, self.talkback_count, self.sdi_count, self.scalers_available)
     }
 }
 
 impl Topology {
-    // TODO: Figure out if the parsing is correct
     pub fn parse(data: &mut Bytes) -> Self {
         let me_count = data.get_u8();
         let source_count = data.get_u8();
-        let color_gen_count = data.get_u8();
-        let aux_count = data.get_u8();
-        data.get_u8(); // Unknown
         let dsk_count = data.get_u8();
-        data.get_u8(); // Unknown
-        let key_count = data.get_u8();
-        let stinger_count = data.get_u8();
+        let aux_count = data.get_u8();
+        let mixminus_output_count = data.get_u8();
+        let mediaplayer_count = data.get_u8();
+        let multiviewer_count = data.get_u8();
+        let rs485_count = data.get_u8();
+        let hyperdeck_count = data.get_u8();
         let dve_count = data.get_u8();
-        data.get_u8(); // Unknown
+        let stinger_count = data.get_u8();
         let supersource_count = data.get_u8();
         data.get_u8(); // Unknown
-        let has_sd = data.get_u8() != 0;
+        let talkback_count = data.get_u8();
+        let sdi_count = data.get_u8(); // Not verified
+        let scalers_available = data.get_u8(); // Not verified
 
         Topology {
             me_count,
             source_count,
-            color_gen_count,
-            aux_count,
             dsk_count,
-            key_count,
-            stinger_count,
+            aux_count,
+            mixminus_output_count,
+            mediaplayer_count,
+            multiviewer_count,
+            rs485_count,
+            hyperdeck_count,
             dve_count,
+            stinger_count,
             supersource_count,
-            has_sd,
+            talkback_count,
+            sdi_count,
+            scalers_available,
         }
     }
 }
