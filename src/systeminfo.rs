@@ -157,3 +157,59 @@ impl fmt::Display for PowerState {
         write!(f, "Primary: {} Secondary: {}", self.primary, self.secondary)
     }
 }
+
+pub enum TimeCodeType {
+    FreeRunning,
+    TimeOfDay,
+    Unknown(u8),
+}
+
+impl From<u8> for TimeCodeType {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => TimeCodeType::FreeRunning,
+            1 => TimeCodeType::TimeOfDay,
+            u => TimeCodeType::Unknown(u),
+        }
+    }
+}
+
+impl From<TimeCodeType> for u8 {
+    fn from(value: TimeCodeType) -> Self {
+        match value {
+            TimeCodeType::FreeRunning => 0,
+            TimeCodeType::TimeOfDay => 1,
+            TimeCodeType::Unknown(u) => u,
+        }
+    }
+}
+
+impl fmt::Display for TimeCodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TimeCodeType::FreeRunning => write!(f, "Free running"),
+            TimeCodeType::TimeOfDay => write!(f, "Time of day"),
+            TimeCodeType::Unknown(u) => write!(f, "Unknown time code type: {u}"),
+        }
+    }
+}
+
+pub struct TimeCodeState {
+    timecode_type: TimeCodeType,
+}
+
+impl TimeCodeState {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let timecode_type = data.get_u8();
+
+        TimeCodeState {
+            timecode_type: timecode_type.into(),
+        }
+    }
+}
+
+impl fmt::Display for TimeCodeState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.timecode_type)
+    }
+}

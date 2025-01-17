@@ -7,7 +7,7 @@ use tracing::debug;
 use crate::{
     parser::parse_str,
     source::Source,
-    systeminfo::{PowerState, Topology, Version},
+    systeminfo::{PowerState, TimeCodeState, Topology, Version},
     tally::{TallyInputs, TallySources},
 };
 
@@ -35,6 +35,7 @@ pub enum Command {
     TransitionStyleSelection(TransitionStyleSelection),
     AuxSource(SourceSelection),
     MultiViewInput(MultiViewInput),
+    TimeCodeState(TimeCodeState),
 }
 
 impl Command {
@@ -105,6 +106,10 @@ impl Command {
                 let multiview_input = MultiViewInput::parse(&mut data);
                 Ok(Command::MultiViewInput(multiview_input))
             }
+            b"TCCc" => {
+                let timecode_state = TimeCodeState::parse(&mut data);
+                Ok(Command::TimeCodeState(timecode_state))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -137,6 +142,7 @@ impl Display for Command {
             }
             Command::AuxSource(selection) => write!(f, "Aux: {selection}"),
             Command::MultiViewInput(input) => write!(f, "Multiview input: {input}"),
+            Command::TimeCodeState(state) => write!(f, "Time code state: {state}"),
         }
     }
 }
