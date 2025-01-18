@@ -5,6 +5,7 @@ mod parser;
 mod source;
 mod systeminfo;
 pub mod tally;
+mod transition;
 
 use std::net::SocketAddr;
 
