@@ -47,6 +47,12 @@ pub enum Command {
     MultiViewVU(MultiViewVU),
     MultiViewSafeArea(MultiViewSafeArea),
     MultiViewLayout(MultiViewLayout),
+    TransitionPreview(TransitionPreview),
+    TransitionMix(TransitionMix),
+    TransitionDip(TransitionDip),
+    TransitionWipe(TransitionWipe),
+    TransitionDVE(TransitionDVE),
+    TransitionStinger(TransitionStinger),
 }
 
 impl Command {
@@ -149,6 +155,30 @@ impl Command {
                 let multiview_layout = MultiViewLayout::parse(&mut data);
                 Ok(Command::MultiViewLayout(multiview_layout))
             }
+            b"TrPr" => {
+                let transition_preview = TransitionPreview::parse(&mut data);
+                Ok(Command::TransitionPreview(transition_preview))
+            }
+            b"TMxP" => {
+                let transition_mix = TransitionMix::parse(&mut data);
+                Ok(Command::TransitionMix(transition_mix))
+            }
+            b"TDpP" => {
+                let transition_dip = TransitionDip::parse(&mut data);
+                Ok(Command::TransitionDip(transition_dip))
+            }
+            b"TWpP" => {
+                let transition_wipe = TransitionWipe::parse(&mut data);
+                Ok(Command::TransitionWipe(transition_wipe))
+            }
+            b"TDvP" => {
+                let transtion_dve = TransitionDVE::parse(&mut data);
+                Ok(Command::TransitionDVE(transtion_dve))
+            }
+            b"TStP" => {
+                let transition_stinger = TransitionStinger::parse(&mut data);
+                Ok(Command::TransitionStinger(transition_stinger))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -189,6 +219,12 @@ impl Display for Command {
             Command::MultiViewVU(vu) => write!(f, "Multiview VU: {vu}"),
             Command::MultiViewSafeArea(safe_area) => write!(f, "Multiview safe area: {safe_area}"),
             Command::MultiViewLayout(layout) => write!(f, "Multiview layout: {layout}"),
+            Command::TransitionPreview(preview) => write!(f, "Transition preview: {preview}"),
+            Command::TransitionMix(mix) => write!(f, "Transition mix: {mix}"),
+            Command::TransitionDip(dip) => write!(f, "Transition dip: {dip}"),
+            Command::TransitionWipe(wipe) => write!(f, "Transition wipe: {wipe}"),
+            Command::TransitionDVE(dve) => write!(f, "Transition DVE: {dve}"),
+            Command::TransitionStinger(stinger) => write!(f, "Transition stinger: {stinger}"),
         }
     }
 }
@@ -366,5 +402,227 @@ impl Display for TransitionStyleSelection {
             self.next_style,
             self.next_selection
         )
+    }
+}
+
+pub struct TransitionPreview {
+    me: u8,
+    enabled: bool,
+}
+
+impl TransitionPreview {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let enabled = data.get_u8() == 1;
+
+        Self { me, enabled }
+    }
+}
+
+impl Display for TransitionPreview {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ME: {} Enabled: {}", self.me, self.enabled)
+    }
+}
+
+pub struct TransitionMix {
+    me: u8,
+    rate: u8,
+}
+
+impl TransitionMix {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let rate = data.get_u8();
+
+        Self { me, rate }
+    }
+}
+
+impl Display for TransitionMix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ME: {} Rate: {}", self.me, self.rate)
+    }
+}
+
+pub struct TransitionDip {
+    me: u8,
+    rate: u8,
+    source: u16,
+}
+
+impl TransitionDip {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let rate = data.get_u8();
+        let source = data.get_u16();
+
+        Self { me, rate, source }
+    }
+}
+
+impl Display for TransitionDip {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ME: {} Rate: {} Source: {}",
+            self.me, self.rate, self.source
+        )
+    }
+}
+
+pub struct TransitionWipe {
+    me: u8,
+    rate: u8,
+    pattern: u8,
+    border_width: u16,
+    border_fill_source: u16,
+    symmetry: u16,
+    softness: u16,
+    origin_x: u16,
+    origin_y: u16,
+    reverse: bool,
+    flip: bool,
+}
+
+impl TransitionWipe {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let rate = data.get_u8();
+        let pattern = data.get_u8();
+        data.get_u8(); // Unknown
+        let border_width = data.get_u16();
+        let border_fill_source = data.get_u16();
+        let symmetry = data.get_u16();
+        let softness = data.get_u16();
+        let origin_x = data.get_u16();
+        let origin_y = data.get_u16();
+        let reverse = data.get_u8() == 1;
+        let flip = data.get_u8() == 1;
+
+        Self {
+            me,
+            rate,
+            pattern,
+            border_width,
+            border_fill_source,
+            symmetry,
+            softness,
+            origin_x,
+            origin_y,
+            reverse,
+            flip,
+        }
+    }
+}
+
+impl Display for TransitionWipe {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ME: {} Rate: {} Pattern: {} Border width: {} Border fill source: {} Symmetry: {} Softness {} Origin X: {} Origin Y: {} Reverse: {} Flip: {}",
+            self.me, self.rate, self.pattern, self.border_width, self.border_fill_source, self.symmetry,
+            self.softness, self.origin_x, self.origin_y, self.reverse, self.flip)
+    }
+}
+
+pub struct TransitionDVE {
+    me: u8,
+    rate: u8,
+    style: u8,
+    fill_source: u16,
+    key_source: u16,
+    key_enabled: bool,
+    key_premultiplied: bool,
+    key_clip: u16,
+    key_gain: u16,
+    key_invert: bool,
+    reverse: bool,
+    flip: bool,
+}
+
+impl TransitionDVE {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let rate = data.get_u8();
+        data.get_u8(); // Unknown
+        let style = data.get_u8();
+        let fill_source = data.get_u16();
+        let key_source = data.get_u16();
+        let key_enabled = data.get_u8() == 1;
+        let key_premultiplied = data.get_u8() == 1;
+        let key_clip = data.get_u16();
+        let key_gain = data.get_u16();
+        let key_invert = data.get_u8() == 1;
+        let reverse = data.get_u8() == 1;
+        let flip = data.get_u8() == 1;
+
+        Self {
+            me,
+            rate,
+            style,
+            fill_source,
+            key_source,
+            key_enabled,
+            key_premultiplied,
+            key_clip,
+            key_gain,
+            key_invert,
+            reverse,
+            flip,
+        }
+    }
+}
+
+impl Display for TransitionDVE {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ME: {} Rate: {} Style: {} Fill source: {} Key Source: {} Key enabled: {} Key premultiplied: {} Key clip: {} Key gain: {} Key invert: {} Reverse: {} Flip: {}",
+            self.me, self.rate, self.style, self.fill_source, self.key_source, self.key_enabled, self.key_premultiplied,
+            self.key_clip, self.key_gain, self.key_invert, self.reverse, self.flip)
+    }
+}
+
+pub struct TransitionStinger {
+    me: u8,
+    source: u16,
+    key_premultiplied: bool,
+    key_clip: u16,
+    key_gain: u16,
+    key_invert: bool,
+    pre_roll: u16,
+    clip_duration: u16,
+    rate: u16,
+}
+
+impl TransitionStinger {
+    pub fn parse(data: &mut Bytes) -> Self {
+        // TODO: Verify that this is correct
+        let me = data.get_u8();
+        let source = data.get_u16();
+        let key_premultiplied = data.get_u8() == 1;
+        let key_clip = data.get_u16();
+        let key_gain = data.get_u16();
+        let key_invert = data.get_u8() == 1;
+        let pre_roll = data.get_u16();
+        let clip_duration = data.get_u16();
+        let rate = data.get_u16();
+
+        Self {
+            me,
+            source,
+            key_premultiplied,
+            key_clip,
+            key_gain,
+            key_invert,
+            pre_roll,
+            clip_duration,
+            rate,
+        }
+    }
+}
+
+impl Display for TransitionStinger {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ME: {} Source: {} Key premultiplied: {} Key clip: {} Key gain: {} Key invert: {} Pre-roll: {} Clip duration: {} Rate: {}",
+            self.me, self.source, self.key_premultiplied, self.key_clip, self.key_gain, self.key_invert,
+            self.pre_roll, self.clip_duration, self.rate)
     }
 }
