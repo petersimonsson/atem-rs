@@ -367,3 +367,110 @@ impl fmt::Display for VideoMode {
         }
     }
 }
+
+pub struct MeConfig {
+    me: u8,
+    key_count: u8,
+}
+
+impl MeConfig {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let key_count = data.get_u8();
+
+        MeConfig { me, key_count }
+    }
+}
+
+impl fmt::Display for MeConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ME: {} Keys: {}", self.me, self.key_count)
+    }
+}
+
+pub struct MediaPlayerConfig {
+    stills: u8,
+    clips: u8,
+}
+
+impl MediaPlayerConfig {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let stills = data.get_u8();
+        let clips = data.get_u8();
+
+        MediaPlayerConfig { stills, clips }
+    }
+}
+
+impl fmt::Display for MediaPlayerConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Stills: {} Clips: {}", self.stills, self.clips)
+    }
+}
+
+pub struct VideoModeInfo {
+    mode: VideoMode,
+    multiview_modes: u32,
+    downconvert_modes: u32,
+    requires_reconfig: bool,
+}
+
+impl VideoModeInfo {
+    pub fn parse(data: &mut Bytes) -> Self {
+        data.get_u16(); //Padding
+        let mode = data.get_u8();
+        data.get_u8(); // Padding
+        let multiview_modes = data.get_u32();
+        let downconvert_modes = data.get_u32();
+        let requires_reconfig = data.get_u8() == 1;
+
+        VideoModeInfo {
+            mode: mode.into(),
+            multiview_modes,
+            downconvert_modes,
+            requires_reconfig,
+        }
+    }
+}
+
+impl fmt::Display for VideoModeInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Mode: {} Multiview modes: {} Down converter modes: {} Reconfig needed: {}",
+            self.mode, self.multiview_modes, self.downconvert_modes, self.requires_reconfig
+        )
+    }
+}
+
+pub struct VideoModeConfig {
+    video_modes: Vec<VideoModeInfo>,
+}
+
+impl VideoModeConfig {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let count = data.get_u16();
+
+        let mut video_modes = Vec::default();
+
+        for _ in 0..count {
+            video_modes.push(VideoModeInfo::parse(data));
+        }
+
+        VideoModeConfig { video_modes }
+    }
+}
+
+impl fmt::Display for VideoModeConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.video_modes
+                .iter()
+                .map(|m| format!("[{}]", m))
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
+    }
+}

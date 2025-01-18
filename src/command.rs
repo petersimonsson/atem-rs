@@ -7,7 +7,10 @@ use tracing::debug;
 use crate::{
     parser::parse_str,
     source::Source,
-    systeminfo::{PowerState, TimeCodeState, Topology, Version, VideoMode},
+    systeminfo::{
+        MeConfig, MediaPlayerConfig, PowerState, TimeCodeState, Topology, Version, VideoMode,
+        VideoModeConfig,
+    },
     tally::{TallyInputs, TallySources},
 };
 
@@ -37,6 +40,9 @@ pub enum Command {
     MultiViewInput(MultiViewInput),
     TimeCodeState(TimeCodeState),
     VideoMode(VideoMode),
+    MeConfig(MeConfig),
+    MediaPlayerConfig(MediaPlayerConfig),
+    VideoModeConfig(VideoModeConfig),
 }
 
 impl Command {
@@ -115,6 +121,18 @@ impl Command {
                 let videomode = VideoMode::parse(&mut data);
                 Ok(Command::VideoMode(videomode))
             }
+            b"_MeC" => {
+                let me_config = MeConfig::parse(&mut data);
+                Ok(Command::MeConfig(me_config))
+            }
+            b"_mpl" => {
+                let media_player_config = MediaPlayerConfig::parse(&mut data);
+                Ok(Command::MediaPlayerConfig(media_player_config))
+            }
+            b"_VMC" => {
+                let videomode_config = VideoModeConfig::parse(&mut data);
+                Ok(Command::VideoModeConfig(videomode_config))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -149,6 +167,9 @@ impl Display for Command {
             Command::MultiViewInput(input) => write!(f, "Multiview input: {input}"),
             Command::TimeCodeState(state) => write!(f, "Time code state: {state}"),
             Command::VideoMode(mode) => write!(f, "Video mode: {mode}"),
+            Command::MeConfig(config) => write!(f, "ME config: {config}"),
+            Command::MediaPlayerConfig(config) => write!(f, "Media player config: {config}"),
+            Command::VideoModeConfig(config) => write!(f, "Video modes: {config}"),
         }
     }
 }
