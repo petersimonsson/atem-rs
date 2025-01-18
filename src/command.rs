@@ -5,6 +5,7 @@ use thiserror::Error;
 use tracing::debug;
 
 use crate::{
+    multiview::{MultiViewInput, MultiViewLayout, MultiViewSafeArea, MultiViewVU},
     parser::parse_str,
     source::Source,
     systeminfo::{
@@ -43,6 +44,9 @@ pub enum Command {
     MeConfig(MeConfig),
     MediaPlayerConfig(MediaPlayerConfig),
     VideoModeConfig(VideoModeConfig),
+    MultiViewVU(MultiViewVU),
+    MultiViewSafeArea(MultiViewSafeArea),
+    MultiViewLayout(MultiViewLayout),
 }
 
 impl Command {
@@ -133,6 +137,18 @@ impl Command {
                 let videomode_config = VideoModeConfig::parse(&mut data);
                 Ok(Command::VideoModeConfig(videomode_config))
             }
+            b"VuMC" => {
+                let multiview_vu = MultiViewVU::parse(&mut data);
+                Ok(Command::MultiViewVU(multiview_vu))
+            }
+            b"SaMw" => {
+                let multiview_safe_area = MultiViewSafeArea::parse(&mut data);
+                Ok(Command::MultiViewSafeArea(multiview_safe_area))
+            }
+            b"MvPr" => {
+                let multiview_layout = MultiViewLayout::parse(&mut data);
+                Ok(Command::MultiViewLayout(multiview_layout))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -170,6 +186,9 @@ impl Display for Command {
             Command::MeConfig(config) => write!(f, "ME config: {config}"),
             Command::MediaPlayerConfig(config) => write!(f, "Media player config: {config}"),
             Command::VideoModeConfig(config) => write!(f, "Video modes: {config}"),
+            Command::MultiViewVU(vu) => write!(f, "Multiview VU: {vu}"),
+            Command::MultiViewSafeArea(safe_area) => write!(f, "Multiview safe area: {safe_area}"),
+            Command::MultiViewLayout(layout) => write!(f, "Multiview layout: {layout}"),
         }
     }
 }
@@ -346,36 +365,6 @@ impl Display for TransitionStyleSelection {
             self.current_selection,
             self.next_style,
             self.next_selection
-        )
-    }
-}
-
-pub struct MultiViewInput {
-    multiview: u8,
-    input: u8,
-    source: u16,
-}
-
-impl MultiViewInput {
-    pub fn parse(data: &mut Bytes) -> Self {
-        let multiview = data.get_u8();
-        let input = data.get_u8();
-        let source = data.get_u16();
-
-        MultiViewInput {
-            multiview,
-            input,
-            source,
-        }
-    }
-}
-
-impl Display for MultiViewInput {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Multiview: {} Input: {} Source: {}",
-            self.multiview, self.input, self.source
         )
     }
 }
