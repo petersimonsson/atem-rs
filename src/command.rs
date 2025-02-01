@@ -57,6 +57,7 @@ pub enum Command {
     TransitionWipe(TransitionWipe),
     TransitionDVE(TransitionDVE),
     TransitionStinger(TransitionStinger),
+    KeyerOnAir(KeyerOnAir),
 }
 
 impl Command {
@@ -183,6 +184,10 @@ impl Command {
                 let transition_stinger = TransitionStinger::parse(&mut data);
                 Ok(Command::TransitionStinger(transition_stinger))
             }
+            b"KeOn" => {
+                let keyer_on_air = KeyerOnAir::parse(&mut data);
+                Ok(Command::KeyerOnAir(keyer_on_air))
+            }
             _ => {
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
@@ -229,6 +234,7 @@ impl Display for Command {
             Command::TransitionWipe(wipe) => write!(f, "Transition wipe: {wipe}"),
             Command::TransitionDVE(dve) => write!(f, "Transition DVE: {dve}"),
             Command::TransitionStinger(stinger) => write!(f, "Transition stinger: {stinger}"),
+            Command::KeyerOnAir(on_air) => write!(f, "Keyer on air: {on_air}"),
         }
     }
 }
@@ -317,6 +323,32 @@ impl Display for Time {
             f,
             "{:02}:{:02}:{:02}:{:02}",
             self.hour, self.minute, self.second, self.frame
+        )
+    }
+}
+
+pub struct KeyerOnAir {
+    me: u8,
+    keyer: u8,
+    on_air: bool,
+}
+
+impl KeyerOnAir {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        let keyer = data.get_u8();
+        let on_air = data.get_u8() == 1;
+
+        Self { me, keyer, on_air }
+    }
+}
+
+impl Display for KeyerOnAir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ME: {} Keyer: {} On air: {}",
+            self.me, self.keyer, self.on_air
         )
     }
 }
