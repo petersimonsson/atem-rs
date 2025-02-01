@@ -1,6 +1,54 @@
 use std::fmt::Display;
 
+use bitflags::bitflags;
 use bytes::{Buf, Bytes};
+
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct TransitionSelection: u8 {
+        const BACKGROUND = 0x01;
+        const KEY1 = 0x02;
+        const KEY2 = 0x04;
+        const KEY3 = 0x08;
+        const KEY4 = 0x10;
+        const KEY5 = 0x20;
+        const KEY6 = 0x40;
+        const KEY7 = 0x80;
+    }
+}
+
+impl Display for TransitionSelection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut output = Vec::default();
+
+        if self.contains(TransitionSelection::BACKGROUND) {
+            output.push("Background");
+        }
+        if self.contains(TransitionSelection::KEY1) {
+            output.push("Key 1");
+        }
+        if self.contains(TransitionSelection::KEY2) {
+            output.push("Key 2");
+        }
+        if self.contains(TransitionSelection::KEY3) {
+            output.push("Key 3");
+        }
+        if self.contains(TransitionSelection::KEY4) {
+            output.push("Key 4");
+        }
+        if self.contains(TransitionSelection::KEY5) {
+            output.push("Key 5");
+        }
+        if self.contains(TransitionSelection::KEY6) {
+            output.push("Key 6");
+        }
+        if self.contains(TransitionSelection::KEY7) {
+            output.push("Key 7");
+        }
+
+        write!(f, "{}", output.join(", "))
+    }
+}
 
 pub enum TransitionStyle {
     Mix,
@@ -53,18 +101,18 @@ impl Display for TransitionStyle {
 pub struct TransitionStyleSelection {
     me: u8,
     current_style: TransitionStyle,
-    current_selection: u8,
+    current_selection: Option<TransitionSelection>,
     next_style: TransitionStyle,
-    next_selection: u8,
+    next_selection: Option<TransitionSelection>,
 }
 
 impl TransitionStyleSelection {
     pub fn parse(data: &mut Bytes) -> Self {
         let me = data.get_u8();
         let current_style = data.get_u8();
-        let current_selection = data.get_u8();
+        let current_selection = TransitionSelection::from_bits(data.get_u8());
         let next_style = data.get_u8();
-        let next_selection = data.get_u8();
+        let next_selection = TransitionSelection::from_bits(data.get_u8());
 
         TransitionStyleSelection {
             me,
@@ -78,14 +126,20 @@ impl TransitionStyleSelection {
 
 impl Display for TransitionStyleSelection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let cur_sel = if let Some(sel) = self.current_selection {
+            sel.to_string()
+        } else {
+            String::default()
+        };
+        let next_sel = if let Some(sel) = self.next_selection {
+            sel.to_string()
+        } else {
+            String::default()
+        };
         write!(
             f,
             "ME: {} Current style: {} Current selection: {} Next style: {} Next selection: {}",
-            self.me,
-            self.current_style,
-            self.current_selection,
-            self.next_style,
-            self.next_selection
+            self.me, self.current_style, cur_sel, self.next_style, next_sel
         )
     }
 }
