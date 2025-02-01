@@ -14,8 +14,8 @@ use crate::{
     },
     tally::{TallyInputs, TallySources},
     transition::{
-        TransitionDVE, TransitionDip, TransitionMix, TransitionPreview, TransitionStinger,
-        TransitionStyleSelection, TransitionWipe,
+        TransitionDVE, TransitionDip, TransitionMix, TransitionPosition, TransitionPreview,
+        TransitionStinger, TransitionStyleSelection, TransitionWipe,
     },
 };
 
@@ -260,38 +260,6 @@ impl SourceSelection {
 impl Display for SourceSelection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} Source: {}", self.destination, self.source_id)
-    }
-}
-
-pub struct TransitionPosition {
-    me: u8,
-    frame_count: u8,
-    position: u16,
-}
-
-impl TransitionPosition {
-    pub fn parse(data: &mut Bytes) -> Self {
-        let me = data.get_u8();
-        data.get_u8(); // Skip
-        let frame_count = data.get_u8();
-        data.get_u8(); // Skip
-        let position = data.get_u16();
-
-        TransitionPosition {
-            me,
-            frame_count,
-            position,
-        }
-    }
-}
-
-impl Display for TransitionPosition {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "ME: {} Frame count: {} Position: {}",
-            self.me, self.frame_count, self.position
-        )
     }
 }
 

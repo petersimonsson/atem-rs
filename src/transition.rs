@@ -90,6 +90,38 @@ impl Display for TransitionStyleSelection {
     }
 }
 
+pub struct TransitionPosition {
+    me: u8,
+    frame_count: u8,
+    position: u16,
+}
+
+impl TransitionPosition {
+    pub fn parse(data: &mut Bytes) -> Self {
+        let me = data.get_u8();
+        data.get_u8(); // Skip
+        let frame_count = data.get_u8();
+        data.get_u8(); // Skip
+        let position = data.get_u16();
+
+        TransitionPosition {
+            me,
+            frame_count,
+            position,
+        }
+    }
+}
+
+impl Display for TransitionPosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ME: {} Frame count: {} Position: {}",
+            self.me, self.frame_count, self.position
+        )
+    }
+}
+
 pub struct TransitionPreview {
     me: u8,
     enabled: bool,
