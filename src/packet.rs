@@ -1,16 +1,22 @@
+use bitflags::bitflags;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 const HEADER_SIZE: u16 = 0x0c;
 
-const PACKET_FLAG_ACK_REQUEST: u8 = 0x01;
-const PACKET_FLAG_HELLO: u8 = 0x02;
-#[allow(dead_code)]
-const PACKET_FLAG_RESEND: u8 = 0x04;
-const PACKET_FLAG_ACK: u8 = 0x10;
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub struct PacketFlag: u8 {
+        const ACK_REQUEST = 0x01;
+        const HELLO = 0x02;
+        #[allow(dead_code)]
+        const RESEND = 0x04;
+        const ACK = 0x10;
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Packet {
-    flags: u8,
+    flags: Option<PacketFlag>,
     uid: u16,
     ack_id: u16,
     id: u16,
@@ -19,7 +25,13 @@ pub struct Packet {
 }
 
 impl Packet {
-    pub fn new(flags: u8, uid: u16, ack_id: u16, id: u16, payload: Option<Bytes>) -> Self {
+    pub fn new(
+        flags: Option<PacketFlag>,
+        uid: u16,
+        ack_id: u16,
+        id: u16,
+        payload: Option<Bytes>,
+    ) -> Self {
         Packet {
             flags,
             uid,
@@ -30,7 +42,7 @@ impl Packet {
     }
 
     pub fn new_ack(uid: u16, ack_id: u16, id: u16) -> Self {
-        Packet::new(PACKET_FLAG_ACK, uid, ack_id, id, None)
+        Packet::new(Some(PacketFlag::ACK), uid, ack_id, id, None)
     }
 
     pub fn serialize(&self) -> Bytes {
@@ -41,7 +53,11 @@ impl Packet {
         } else {
             0
         };
-        let size_flags = ((self.flags as u16) << 11) | (payload_size + HEADER_SIZE);
+        let size_flags = if let Some(flags) = self.flags {
+            ((flags.bits() as u16) << 11) | (payload_size + HEADER_SIZE)
+        } else {
+            payload_size + HEADER_SIZE
+        };
 
         bytes.put_u16(size_flags);
         bytes.put_u16(self.uid);
@@ -73,7 +89,7 @@ impl Packet {
         };
 
         Packet {
-            flags,
+            flags: PacketFlag::from_bits(flags),
             uid,
             ack_id,
             id,
@@ -90,11 +106,19 @@ impl Packet {
     }
 
     pub fn ack_request(&self) -> bool {
-        self.flags & PACKET_FLAG_ACK_REQUEST > 0
+        if let Some(flags) = self.flags {
+            !(flags & PacketFlag::ACK_REQUEST).is_empty()
+        } else {
+            false
+        }
     }
 
     pub fn is_hello(&self) -> bool {
-        self.flags & PACKET_FLAG_HELLO > 0
+        if let Some(flags) = self.flags {
+            !(flags & PacketFlag::HELLO).is_empty()
+        } else {
+            false
+        }
     }
 
     pub fn payload(&self) -> Option<Bytes> {
@@ -104,7 +128,13 @@ impl Packet {
     pub fn new_hello_packet() -> Self {
         let hello_data = Bytes::from(vec![0x01u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
 
-        Packet::new(PACKET_FLAG_HELLO, 0x1337, 0x0000, 0x0000, Some(hello_data))
+        Packet::new(
+            Some(PacketFlag::HELLO),
+            0x1337,
+            0x0000,
+            0x0000,
+            Some(hello_data),
+        )
     }
 }
 
@@ -117,7 +147,7 @@ mod tests {
         let mut hello_data = BytesMut::new();
         hello_data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
         let packet = Packet::new(
-            PACKET_FLAG_HELLO,
+            Some(PacketFlag::HELLO),
             0x5706,
             0x0000,
             0x0000,
@@ -146,7 +176,7 @@ mod tests {
         let mut hello_data = BytesMut::new();
         hello_data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
         let expected = Packet::new(
-            PACKET_FLAG_HELLO,
+            Some(PacketFlag::HELLO),
             0x5706,
             0x0000,
             0x0000,
