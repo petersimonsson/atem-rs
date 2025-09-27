@@ -19,6 +19,9 @@ use crate::{
     },
 };
 
+const COMMAND_NAME_SIZE: usize = 4;
+const HEADER_SIZE: usize = COMMAND_NAME_SIZE + 4;
+
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("String parsing failed")]
@@ -36,7 +39,7 @@ pub enum Command {
     ProgramInput(SourceSelection),
     PreviewInput(SourceSelection),
     TransitionPosition(TransitionPosition),
-    Time(Time),
+    Time(FrameTime),
     TallyInputs(TallyInputs),
     TallySources(TallySources),
     PowerState(PowerState),
@@ -63,9 +66,9 @@ pub enum Command {
 impl Command {
     pub fn parse(payload: &mut Bytes) -> Result<Command, Error> {
         let size = payload.get_u16();
-        payload.get_u16(); // skip two bytes, unknow function.
-        let cmd = payload.split_to(4);
-        let data_size = size as usize - 8;
+        payload.get_u16(); // skip two bytes, padding.
+        let cmd = payload.split_to(COMMAND_NAME_SIZE);
+        let data_size = size as usize - HEADER_SIZE;
         let mut data = payload.split_to(data_size);
         debug!("Command {:?} Size: {}", cmd, size);
 
@@ -99,7 +102,7 @@ impl Command {
                 Ok(Command::TransitionPosition(transition_position))
             }
             b"Time" => {
-                let time = Time::parse(&mut data);
+                let time = FrameTime::parse(&mut data);
                 Ok(Command::Time(time))
             }
             b"TlIn" => {
@@ -189,13 +192,14 @@ impl Command {
                 Ok(Command::KeyerOnAir(keyer_on_air))
             }
             _ => {
+                let cmd_str = String::from_utf8(cmd.to_vec())?;
                 debug!(
                     "Unknown command: {} Data: {:02X?} [{}]",
-                    String::from_utf8(cmd.to_vec())?,
+                    cmd_str,
                     &data[..],
                     data_size
                 );
-                Err(Error::UnknownCommand(String::from_utf8(cmd.to_vec())?))
+                Err(Error::UnknownCommand(cmd_str))
             }
         }
     }
@@ -263,29 +267,25 @@ impl Display for SourceSelection {
     }
 }
 
-pub struct Time {
+pub struct FrameTime {
     hour: u8,
     minute: u8,
     second: u8,
     frame: u8,
 }
 
-impl Time {
+impl FrameTime {
     pub fn parse(data: &mut Bytes) -> Self {
-        let hour = data.get_u8();
-        let minute = data.get_u8();
-        let second = data.get_u8();
-        let frame = data.get_u8();
-        Time {
-            hour,
-            minute,
-            second,
-            frame,
+        Self {
+            hour: data.get_u8(),
+            minute: data.get_u8(),
+            second: data.get_u8(),
+            frame: data.get_u8(),
         }
     }
 }
 
-impl Display for Time {
+impl Display for FrameTime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
