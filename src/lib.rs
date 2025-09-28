@@ -70,7 +70,7 @@ async fn send_hello_packet(socket: &UdpSocket) -> Result<(), Error> {
 }
 
 async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
-    let mut packet_id = 0;
+    let mut packet_id: u16 = 0;
 
     if let Err(e) = send_hello_packet(&socket).await {
         let _ = tx.send(Message::Disconnected(e));
@@ -102,7 +102,7 @@ async fn run(socket: UdpSocket, tx: mpsc::UnboundedSender<Message>) {
                     }
                     continue;
                 } else if packet.ack_request() {
-                    packet_id += 1;
+                    packet_id = packet_id.wrapping_add(1);
                     if let Err(e) = send_ack(&socket, packet.uid(), packet_id, packet.id()).await {
                         let _ = tx.send(Message::Disconnected(e));
                         return;
