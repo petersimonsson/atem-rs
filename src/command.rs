@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use bytes::{Buf, Bytes};
 use thiserror::Error;
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::{
     multiview::{MultiViewInput, MultiViewLayout, MultiViewSafeArea, MultiViewVU},
@@ -194,7 +194,6 @@ impl Command {
                 Ok(Command::KeyerOnAir(keyer_on_air))
             }
             b"KeBP" => {
-                info!("KeBP Data: {:02X?} [{}]", &data[..], data_size);
                 let keyer_bp = KeyerBaseProperties::parse(&mut data);
                 Ok(Command::KeyerBaseProperties(keyer_bp))
             }
