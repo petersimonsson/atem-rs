@@ -1,11 +1,12 @@
 pub mod command;
-mod multiview;
+pub mod multiview;
 mod packet;
-mod parser;
-mod source;
-mod systeminfo;
+pub mod parser;
+pub mod source;
+pub mod systeminfo;
 pub mod tally;
-mod transition;
+pub mod transition;
+pub mod upstreamkeyer;
 
 use std::net::SocketAddr;
 
