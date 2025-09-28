@@ -36,13 +36,15 @@ pub enum Message {
     Command(Command),
 }
 
-pub struct Connection {
+pub struct Client {}
+
+pub struct Eventloop {
     rx: mpsc::UnboundedReceiver<Message>,
 }
 
-impl Connection {
+impl Client {
     /// Open a connection to a Blackmagic ATEM switcher at address
-    pub async fn open(address: &str) -> Result<Self, Error> {
+    pub async fn connect(address: &str) -> Result<(Client, Eventloop), Error> {
         let remote_addr: SocketAddr = format!("{}:9910", address).parse()?;
         let local_addr: SocketAddr = "0.0.0.0:0".parse()?;
 
@@ -52,13 +54,21 @@ impl Connection {
         info!("Local address: {}", socket.local_addr()?);
         info!("ATEM switcher address: {}", remote_addr);
 
+        let eventloop = Eventloop::start(socket);
+
+        Ok((Client {}, eventloop))
+    }
+}
+
+impl Eventloop {
+    fn start(socket: UdpSocket) -> Self {
         let (tx, rx) = mpsc::unbounded_channel();
         tokio::task::spawn(async move { run(socket, tx).await });
 
-        Ok(Connection { rx })
+        Self { rx }
     }
 
-    pub async fn recv_message(&mut self) -> Option<Message> {
+    pub async fn poll(&mut self) -> Option<Message> {
         self.rx.recv().await
     }
 }
