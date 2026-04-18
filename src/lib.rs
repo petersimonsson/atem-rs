@@ -127,6 +127,28 @@ pub struct PinCommand {
     reserved: [u8; 4],
 }
 
+#[derive(Debug, FromBytes, IntoBytes, Immutable, KnownLayout)]
+#[repr(C)]
+pub struct TopologyCommand {
+    me_count: u8,
+    source_count: u8,
+    dsk_count: u8,
+    aux_count: u8,
+    mix_minus_count: u8,
+    mediaplayer_count: u8,
+    multiview_count: u8,
+    rs485_count: u8,
+    hyperdeck_count: u8,
+    dve_count: u8,
+    stinger_count: u8,
+    supersource_count: u8,
+    reserved: u8,
+    talkback_count: u8,
+    sdi_count: u8,
+    scaler_count: u8,
+    reserved2: [u8; 12],
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -421,6 +443,47 @@ mod tests {
         assert_eq!(
             &pin_command.name,
             b"ATEM Mini Pro\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        );
+        assert_eq!(
+            command_header.size,
+            size_of_val(pin_command) as u16 + size_of_val(command_header) as u16
+        );
+
+        let (command_header, remaining) = CommandHeader::ref_from_prefix(remaining).unwrap();
+
+        println!(
+            "{:?} ({}) -> {:02X?}",
+            command_header,
+            command_header.size(),
+            remaining[..command_header.size() as usize - size_of_val(command_header)].to_vec()
+        );
+
+        assert_eq!(command_header.size, 0x0024);
+        assert_eq!(&command_header.command, b"_top");
+
+        let (topology, remaining) = TopologyCommand::ref_from_prefix(remaining).unwrap();
+
+        println!("{:?} -> {:02X?}", topology, remaining);
+
+        assert_eq!(topology.me_count, 0x01);
+        assert_eq!(topology.source_count, 0x13);
+        assert_eq!(topology.dsk_count, 0x01);
+        assert_eq!(topology.aux_count, 0x02);
+        assert_eq!(topology.mix_minus_count, 0x00);
+        assert_eq!(topology.mediaplayer_count, 0x01);
+        assert_eq!(topology.multiview_count, 0x01);
+        assert_eq!(topology.rs485_count, 0x00);
+        assert_eq!(topology.hyperdeck_count, 0x0a);
+        assert_eq!(topology.dve_count, 0x01);
+        assert_eq!(topology.stinger_count, 0x00);
+        assert_eq!(topology.supersource_count, 0x00);
+        assert_eq!(topology.reserved, 0x00);
+        assert_eq!(topology.talkback_count, 0x00);
+        assert_eq!(topology.sdi_count, 0x00);
+        assert_eq!(topology.scaler_count, 0x01);
+        assert_eq!(
+            command_header.size,
+            size_of_val(topology) as u16 + size_of_val(command_header) as u16
         );
 
         assert_eq!(remaining.len(), 0x00);
