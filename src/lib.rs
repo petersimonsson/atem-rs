@@ -149,6 +149,14 @@ pub struct TopologyCommand {
     reserved2: [u8; 12],
 }
 
+#[derive(Debug, FromBytes, IntoBytes, Immutable, KnownLayout)]
+#[repr(C)]
+pub struct MixEffactConfigCommand {
+    me: u8,
+    key_count: u8,
+    reserved: [u8; 2],
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -484,6 +492,30 @@ mod tests {
         assert_eq!(
             command_header.size,
             size_of_val(topology) as u16 + size_of_val(command_header) as u16
+        );
+
+        let (command_header, remaining) = CommandHeader::ref_from_prefix(remaining).unwrap();
+
+        println!(
+            "{:?} ({}) -> {:02X?}",
+            command_header,
+            command_header.size(),
+            remaining[..command_header.size() as usize - size_of_val(command_header)].to_vec()
+        );
+
+        assert_eq!(command_header.size, 0x000c);
+        assert_eq!(&command_header.command, b"_MeC");
+
+        let (mix_effect_config, remaining) =
+            MixEffactConfigCommand::ref_from_prefix(remaining).unwrap();
+
+        println!("{:?} -> {:02X?}", mix_effect_config, remaining);
+
+        assert_eq!(mix_effect_config.me, 0x00);
+        assert_eq!(mix_effect_config.key_count, 0x01);
+        assert_eq!(
+            command_header.size,
+            size_of_val(mix_effect_config) as u16 + size_of_val(command_header) as u16
         );
 
         assert_eq!(remaining.len(), 0x00);
