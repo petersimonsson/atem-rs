@@ -120,6 +120,13 @@ impl VersionCommand {
     }
 }
 
+#[derive(Debug, FromBytes, IntoBytes, Immutable, KnownLayout)]
+#[repr(C)]
+pub struct PinCommand {
+    name: [u8; 40],
+    reserved: [u8; 4],
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -394,6 +401,27 @@ mod tests {
 
         assert_eq!(version_command.major(), 0x02);
         assert_eq!(version_command.minor(), 0x1f);
+
+        let (command_header, remaining) = CommandHeader::ref_from_prefix(remaining).unwrap();
+
+        println!(
+            "{:?} ({}) -> {:02X?}",
+            command_header,
+            command_header.size(),
+            remaining[..command_header.size() as usize - size_of_val(command_header)].to_vec()
+        );
+
+        assert_eq!(command_header.size, 0x0034);
+        assert_eq!(&command_header.command, b"_pin");
+
+        let (pin_command, remaining) = PinCommand::ref_from_prefix(remaining).unwrap();
+
+        println!("{:?} -> {:02X?}", pin_command, remaining);
+
+        assert_eq!(
+            &pin_command.name,
+            b"ATEM Mini Pro\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        );
 
         assert_eq!(remaining.len(), 0x00);
     }
