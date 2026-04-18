@@ -171,14 +171,6 @@ mod tests {
         let (header, remaining) = PacketHeader::ref_from_prefix(data.as_ref()).unwrap();
         let hello_data = HelloData::ref_from_bytes(remaining).unwrap();
 
-        println!(
-            "{:02X?} -> {:02X?} ---- {:?}, {:02X}",
-            header,
-            hello_data,
-            header.flags(),
-            header.packet_size()
-        );
-
         assert_eq!(header.flag_size, [0x10, 0x14]);
         assert_eq!(header.packet_size(), 0x0014);
         assert_eq!(header.flags(), Some(PacketFlag::HELLO));
@@ -220,8 +212,6 @@ mod tests {
 
         let (header, remaining) = PacketHeader::ref_from_prefix(data.as_ref()).unwrap();
 
-        println!("{:02X?} -> {:02X?}", header, remaining);
-
         assert_eq!(header.flag_size, [0x80, 0x0c]);
         assert_eq!(header.packet_size(), 0x000c);
         assert_eq!(header.flags(), Some(PacketFlag::ACK));
@@ -236,8 +226,6 @@ mod tests {
         let data: [u8; 0x0c] = [0x88, 0xc, 0x80, 0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xd];
 
         let (header, remaining) = PacketHeader::ref_from_prefix(data.as_ref()).unwrap();
-
-        println!("{:02X?} -> {:02X?}", header, remaining);
 
         assert_eq!(header.flag_size, [0x88, 0x0c]);
         assert_eq!(header.packet_size(), 0x000c);
