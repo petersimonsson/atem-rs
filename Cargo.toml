@@ -6,3 +6,5 @@ authors = ["Peter Simonsson <peter.simonsson@gmail.com>"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+bitflags = "2.11.1"
+zerocopy = { version = "0.8.48", features = ["derive"] }
